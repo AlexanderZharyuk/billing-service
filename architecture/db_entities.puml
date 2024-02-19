@@ -6,32 +6,31 @@ skinparam linetype ortho
 entity "Invoice" as invoice {
   *invoice_id : UUID <<PK>>
   --
-  *customer_id : UUID - <<FK>>
+  *subscription_id: UUID <<FK>>
   *invoice_dt : datetime
+  *created: datetime
+  *modified: datetime
 }
 
 entity "Subscription" as subscription {
   *id: UUID <<PK>>
   --
-  *plan_id: number - <<FK>>
-  *invoice_id <<FK>>
-  *valid_to: datetime
+  *plan_id: UUID <<FK>>
+  * **user_id: UUID**
+  *status: text
+  *start_dt: datetime
+  *end_dt: datetime
+  *created: datetime
+  *modified: datetime
 }
 
 entity "Plan" as plan {
-  *id : number <<PK>>
+  *id : UUID <<PK>>
   --
   *name: text
-  description: text
-}
-
-entity "Customer" as customer {
-  *customer_id : UUID <<PK>>
-  --
-  name: text
-  *phone: number
-  *email: text
-  address: text
+   description: text
+  *created: datetime
+  *modified: datetime
 }
 
 
@@ -41,35 +40,30 @@ entity "Payment" as payment {
   *invoice_id: UUID <<FK>>
   *provider_id: UUID <<FK>>
   *status: text
-  *value: number:
+  *value: number
   *currency: text
-  *created_at: datetime
-  *updated_at: datetime
+  *created: datetime
+  *modified: datetime
 }
 
 
 entity "PaymentProvider" as provider {
-  *id : number <<generated>>
+  *id : UUID <<PK>>
   --
   *name: text
   description: text
-  
+  *created: datetime
+  *modified: datetime
 }
 
-/'
-entity "Currency" as currency{
-  *id: number <<generated>>
-  --
-  *type: text
-  *name: text
-}
-'/
 
 entity "Feature" as feature{
-  *id: UUID <<generated>>
+  *id: UUID <<PK>>
   --
   *name: text
   description: text
+  *created: datetime
+  *modified: datetime
 }
 
 
@@ -80,22 +74,10 @@ entity "PlanFeatures" as plan_features {
   *feature_id: UUID <<FK>>
 }
 
-/'
-entity "Receipt" as receipt {
-  *id: UUID <<generated>>
-  --
-  *payment_id: UUID <<FK>>
-  
-}
-'/
-
 invoice ||-up-|| subscription
-subscription }|-left-|| plan
-invoice }|-right-|| customer
+subscription }|-up-|| plan
 invoice ||--|{ payment
 payment }|-left-|| provider
-/' payment }|-right-|| currency '/
 plan ||-left-|{ plan_features
-plan_features }|-left-|| feature   
-/' payment ||--|| receipt '/
+plan_features }|-left-|| feature
 @enduml
