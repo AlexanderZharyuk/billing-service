@@ -1,0 +1,81 @@
+@startuml
+' hide the spot
+' hide circle
+skinparam linetype ortho
+
+entity "Invoice" as invoice {
+  *invoice_id : UUID <<PK>>
+  --
+  *customer_id : UUID - <<FK>>
+  *plan_id: number - <<FK>>
+  *invoice_dt : datetime
+}
+
+entity "Subscription" as subscription {
+  *id: UUID <<PK>>
+  --
+  invoice_id <<FK>>
+  valid_to: datetime
+}
+
+entity "Plan" as plan {
+  *plan_id : number <<PK>>
+  --
+  plan_name: text
+}
+
+entity "Customer" as customer {
+  *customer_id : UUID <<PK>>
+  --
+  name: text
+  *phone: number
+  *email: text
+  address: text
+}
+
+
+entity "Payment" as payment {
+  *id: UUID <<PK>>
+  --
+  *invoice_id: UUID <<FK>>
+  *provider_id: UUID <<FK>>
+  *status: text
+  *value: number:
+  *currency_id: number 
+  *created_at: datetime
+  *updated_at: datetime
+}
+
+
+entity "PaymentProvider" as provider {
+  *id : number <<generated>>
+  --
+  *name: text
+  description: text
+  
+}
+
+entity "Currency" as currency{
+  *id: number <<generated>>
+  --
+  *type: text
+  *name: text
+}
+
+/'
+entity "Receipt" as receipt {
+  *id: UUID <<generated>>
+  --
+  *payment_id: UUID <<FK>>
+  
+}
+'/
+
+invoice ||-up-|| subscription
+invoice }|-left-|| plan
+invoice }|-right-|| customer
+invoice ||--|{ payment
+payment }|-left-|| provider
+payment }|-right-|| currency
+/' payment ||--|| receipt '/
+@enduml
