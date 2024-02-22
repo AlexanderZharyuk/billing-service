@@ -10,13 +10,14 @@ entity "Invoice" as invoice {
   *invoice_dt : datetime
   *created: datetime
   *modified: datetime
+  *price: int
 }
 
 entity "Subscription" as subscription {
   *id: UUID <<PK>>
   --
   *plan_id: UUID <<FK>>
-  * **user_id: UUID**
+  *user_id: UUID
   *status: text
   *start_dt: datetime
   *end_dt: datetime
@@ -28,9 +29,15 @@ entity "Plan" as plan {
   *id : UUID <<PK>>
   --
   *name: text
-   description: text
+  *description: text
+  *is_active: bool
+  *is_recurring: bool
   *created: datetime
   *modified: datetime
+  *duration: int
+  *duration_unit: int
+  *price_per_unit: int
+  *price: int
 }
 
 
@@ -51,7 +58,8 @@ entity "PaymentProvider" as provider {
   *id : UUID <<PK>>
   --
   *name: text
-  description: text
+  *description: text
+  *is_active: bool
   *created: datetime
   *modified: datetime
 }
@@ -61,9 +69,10 @@ entity "Feature" as feature{
   *id: UUID <<PK>>
   --
   *name: text
-  description: text
+  *description: text
   *created: datetime
   *modified: datetime
+  *available_entities: jsonb
 }
 
 
