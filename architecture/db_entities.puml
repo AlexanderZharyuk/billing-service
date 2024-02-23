@@ -3,37 +3,37 @@
 ' hide circle
 skinparam linetype ortho
 
-entity "Invoice" as invoice {
+entity "Invoices" as invoice {
   *invoice_id : UUID <<PK>>
   --
   *subscription_id: UUID <<FK>>
   *invoice_dt : datetime
-  *created: datetime
-  *modified: datetime
+  *created_at: datetime
+  *updated_at: datetime
   *price: int
 }
 
-entity "Subscription" as subscription {
+entity "Subscriptions" as subscription {
   *id: UUID <<PK>>
   --
   *plan_id: UUID <<FK>>
   *user_id: UUID
   *status: text
-  *start_dt: datetime
-  *end_dt: datetime
-  *created: datetime
-  *modified: datetime
+  *started_at: datetime
+  *ended_at: datetime
+  *created_at: datetime
+  *updated_at: datetime
 }
 
-entity "Plan" as plan {
+entity "Plans" as plan {
   *id : UUID <<PK>>
   --
   *name: text
   *description: text
   *is_active: bool
   *is_recurring: bool
-  *created: datetime
-  *modified: datetime
+  *created_at: datetime
+  *updated_at: datetime
   *duration: int
   *duration_unit: int
   *price_per_unit: int
@@ -41,44 +41,42 @@ entity "Plan" as plan {
 }
 
 
-entity "Payment" as payment {
+entity "Payments" as payment {
   *id: UUID <<PK>>
   --
   *invoice_id: UUID <<FK>>
   *provider_id: UUID <<FK>>
   *status: text
-  *value: number
+  *amount: number
   *currency: text
-  *created: datetime
-  *modified: datetime
+  *created_at: datetime
+  *updated_at: datetime
 }
 
 
-entity "PaymentProvider" as provider {
+entity "PaymentProviders" as provider {
   *id : UUID <<PK>>
   --
   *name: text
   *description: text
   *is_active: bool
-  *created: datetime
-  *modified: datetime
+  *created_at: datetime
+  *updated_at: datetime
 }
 
 
-entity "Feature" as feature{
+entity "Features" as feature{
   *id: UUID <<PK>>
   --
   *name: text
   *description: text
-  *created: datetime
-  *modified: datetime
+  *created_at: datetime
+  *updated_at: datetime
   *available_entities: jsonb
 }
 
 
-entity "PlanFeatures" as plan_features {
-  *id: UUID <<generated>>
-  --
+entity "PlansToFeaturesLink" as plan_features {
   *plan_id: UUID <<FK>>
   *feature_id: UUID <<FK>>
 }
