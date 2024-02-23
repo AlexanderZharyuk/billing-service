@@ -12,7 +12,7 @@ from src.db import postgres
 from src.models import BaseExceptionBody
 from src.v1.features.routers import router as features_router
 from src.v1.healthcheck.routers import router as healthcheck_router
-from sqlmodel import SQLModel, create_engine
+from sqlmodel import SQLModel
 
 v1_router = APIRouter(
     prefix="/api/v1",
@@ -26,7 +26,7 @@ v1_router.include_router(healthcheck_router)
 v1_router.include_router(features_router)
 
 
-async def create_database():
+async def create_tables():
     engine = create_async_engine(
         settings.pg_dsn,
         echo=True,
@@ -40,7 +40,7 @@ async def create_database():
     await engine.dispose()
 
 
-async def delete_database():
+async def drop_tables():
     engine = create_async_engine(
         settings.pg_dsn,
         echo=True,
@@ -58,8 +58,14 @@ async def delete_database():
 async def lifespan(app: FastAPI):
     # startup
     from src.v1.features.models import Feature
+    from src.v1.payment_providers.models import PaymentProvider
+    from src.v1.plans.models import Plan, PlansToFeaturesLink
+    from src.v1.subscriptions.models import Subscription
+    from src.v1.invoices.models import Invoice
+    from src.v1.payments.models import Payment
+
     # await delete_database()
-    await create_database()
+    await create_tables()
     # run
     yield
     # shutdown
