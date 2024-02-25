@@ -4,9 +4,9 @@
 skinparam linetype ortho
 
 entity "Invoices" as invoice {
-  *invoice_id : UUID <<PK>>
+  *invoice_id : int <<PK>>
   --
-  *subscription_id: UUID <<FK>>
+  *subscription_id: int <<FK>>
   *invoice_dt : datetime
   *created_at: datetime
   *updated_at: datetime
@@ -14,9 +14,9 @@ entity "Invoices" as invoice {
 }
 
 entity "Subscriptions" as subscription {
-  *id: UUID <<PK>>
+  *id: int <<PK>>
   --
-  *plan_id: UUID <<FK>>
+  *plan_id: int <<FK>>
   *user_id: UUID
   *status: text
   *started_at: datetime
@@ -26,7 +26,7 @@ entity "Subscriptions" as subscription {
 }
 
 entity "Plans" as plan {
-  *id : UUID <<PK>>
+  *id : int <<PK>>
   --
   *name: text
   *description: text
@@ -37,15 +37,14 @@ entity "Plans" as plan {
   *duration: int
   *duration_unit: int
   *price_per_unit: int
-  *price: int
 }
 
 
 entity "Payments" as payment {
-  *id: UUID <<PK>>
+  *id: int <<PK>>
   --
-  *invoice_id: UUID <<FK>>
-  *provider_id: UUID <<FK>>
+  *invoice_id: int <<FK>>
+  *provider_id: int <<FK>>
   *status: text
   *amount: number
   *currency: text
@@ -55,7 +54,7 @@ entity "Payments" as payment {
 
 
 entity "PaymentProviders" as provider {
-  *id : UUID <<PK>>
+  *id : int <<PK>>
   --
   *name: text
   *description: text
@@ -66,7 +65,7 @@ entity "PaymentProviders" as provider {
 
 
 entity "Features" as feature{
-  *id: UUID <<PK>>
+  *id: int <<PK>>
   --
   *name: text
   *description: text
@@ -77,11 +76,11 @@ entity "Features" as feature{
 
 
 entity "PlansToFeaturesLink" as plan_features {
-  *plan_id: UUID <<FK>>
-  *feature_id: UUID <<FK>>
+  *plan_id: int <<FK>>
+  *feature_id: int <<FK>>
 }
 
-invoice ||-up-|| subscription
+invoice }|-up-|| subscription
 subscription }|-up-|| plan
 invoice ||--|{ payment
 payment }|-left-|| provider
