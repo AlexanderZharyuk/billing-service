@@ -1,11 +1,9 @@
-import uuid
 from enum import Enum
-from typing import Optional, List
-from uuid import UUID
+from typing import Optional
 
-from sqlmodel import SQLModel, Field, Column, Relationship
+from sqlmodel import SQLModel, Field, Relationship, CheckConstraint
 
-from src.models import BaseResponseBody
+from src.models import BaseResponseBody, Base
 from src.models import TimeStampedMixin
 
 
@@ -23,20 +21,21 @@ class CurrencyEnum(str, Enum):
     EUR = "eur"
 
 
-class Payment(TimeStampedMixin, table=True):
+class Payment(Base, TimeStampedMixin, table=True):
     """Модель таблицы с платежами."""
 
     __tablename__ = "payments"
+    __table_args__ = (CheckConstraint("amount > 0", name="amount_positive_integer"),)
 
-    id: Optional[UUID] = Field(
-        default_factory=uuid.uuid4,
+    id: Optional[int] = Field(
+        default=None,
         primary_key=True,
-        schema_extra={"examples": [uuid.uuid4()]},
+        schema_extra={"examples": [5]},
     )
-    invoice_id: UUID = Field(foreign_key="invoices.id")
-    invoice: "Invoice" = Relationship(back_populates="payment")
-    payment_provider_id: UUID = Field(foreign_key="payment_providers.id")
-    payment_provider: "PaymentProvider" = Relationship(back_populates="payment")
+    invoice_id: int = Field(foreign_key="invoices.id")
+    invoice: "Invoice" = Relationship(back_populates="payments")
+    payment_provider_id: int = Field(foreign_key="payment_providers.id")
+    payment_provider: "PaymentProvider" = Relationship(back_populates="payments")
     status: PaymentStatusEnum = Field(
         default=PaymentStatusEnum.CREATED,
     )
@@ -51,8 +50,11 @@ class Payment(TimeStampedMixin, table=True):
 
 class PaymentCreate(SQLModel):
     name: str
-    description: Optional[str] = Field(default=None)
-    available_entities: Optional[list] = Field(default=[])
+    invoice_id: int
+    payment_provider_id: int
+    status: PaymentStatusEnum
+    currency: CurrencyEnum
+    amount: int
 
 
 class PaymentUpdate(PaymentCreate):

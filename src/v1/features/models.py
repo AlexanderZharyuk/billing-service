@@ -1,16 +1,15 @@
-import uuid
 from typing import Optional, List
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlmodel import SQLModel, Field, Column, Relationship
 
-from src.models import BaseResponseBody
+from src.models import BaseResponseBody, Base
 from src.models import TimeStampedMixin
 from src.v1.plans.models import PlansToFeaturesLink
 
 
-class Feature(TimeStampedMixin, table=True):
+class Feature(Base, TimeStampedMixin, table=True):
     """Модель таблицы с фичами."""
 
     __tablename__ = "features"
@@ -18,10 +17,10 @@ class Feature(TimeStampedMixin, table=True):
     class Config:
         arbitrary_types_allowed = True
 
-    id: Optional[UUID] = Field(
-        default_factory=uuid.uuid4,
+    id: Optional[int] = Field(
+        default=None,
         primary_key=True,
-        schema_extra={"examples": [uuid.uuid4()]},
+        schema_extra={"examples": [5]},
     )
     name: str = Field(
         index=True,
@@ -36,7 +35,7 @@ class Feature(TimeStampedMixin, table=True):
     available_entities: Optional[List[UUID]] = Field(
         default_factory=list,
         sa_column=Column(JSONB),
-        schema_extra={"examples": [[uuid.uuid4(), uuid.uuid4()]]},
+        schema_extra={"examples": [[uuid4(), uuid4()]]},
     )
     plans: List["Plan"] = Relationship(back_populates="features", link_model=PlansToFeaturesLink)
 

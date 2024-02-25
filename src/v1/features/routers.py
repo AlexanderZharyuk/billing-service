@@ -37,7 +37,7 @@ async def list_features(db_session: DatabaseSession) -> SeveralFeaturesResponse:
     description="Получить конкретную фичу.",
 )
 async def get_feature(
-    feature_id: Annotated[UUID, Path(examples=[uuid.uuid4()])], db_session: DatabaseSession
+    feature_id: Annotated[int, Path(examples=[5])], db_session: DatabaseSession
 ) -> SingleFeatureResponse:
     feature = await FeatureService.get(session=db_session, object_id=feature_id)
     return SingleFeatureResponse(data=feature)
@@ -69,7 +69,7 @@ async def create_feature(
 )
 async def update(
     feature: FeatureUpdate,
-    feature_id: Annotated[UUID, Path(examples=[uuid.uuid4()])],
+    feature_id: Annotated[int, Path(examples=[5])],
     db_session: DatabaseSession,
 ) -> SingleFeatureResponse:
     feature = await FeatureService.update(session=db_session, object_id=feature_id, data=feature)
@@ -85,7 +85,7 @@ async def update(
     dependencies=[Depends(get_superuser)],
 )
 async def delete(
-    feature_id: Annotated[UUID, Path(examples=[uuid.uuid4()])],
+    feature_id: Annotated[int, Path(examples=[5])],
     db_session: DatabaseSession,
 ) -> SingleFeatureResponse:
     result = await FeatureService.delete(session=db_session, object_id=feature_id)

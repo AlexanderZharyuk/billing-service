@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import create_async_engine
 import src.constants as const
 from src.core.config import LOGGING, settings
 from src.db import postgres
-from src.models import BaseExceptionBody
+from src.models import BaseExceptionBody, Base
 from src.v1.features.routers import router as features_router
 from src.v1.healthcheck.routers import router as healthcheck_router
 from sqlmodel import SQLModel
@@ -27,36 +27,6 @@ v1_router.include_router(features_router)
 
 
 async def create_tables():
-    engine = create_async_engine(
-        settings.pg_dsn,
-        echo=True,
-        future=True,
-        pool_size=20,
-        max_overflow=20,
-        pool_recycle=3600,
-    )
-    async with engine.begin() as conn:
-        await conn.run_sync(SQLModel.metadata.create_all)
-    await engine.dispose()
-
-
-async def drop_tables():
-    engine = create_async_engine(
-        settings.pg_dsn,
-        echo=True,
-        future=True,
-        pool_size=20,
-        max_overflow=20,
-        pool_recycle=3600,
-    )
-    async with engine.begin() as conn:
-        await conn.run_sync(SQLModel.metadata.drop_all)
-    await engine.dispose()
-
-
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    # startup
     from src.v1.features.models import Feature
     from src.v1.payment_providers.models import PaymentProvider
     from src.v1.plans.models import Plan, PlansToFeaturesLink
@@ -64,7 +34,44 @@ async def lifespan(app: FastAPI):
     from src.v1.invoices.models import Invoice
     from src.v1.payments.models import Payment
 
-    # await delete_database()
+    engine = create_async_engine(
+        settings.pg_dsn,
+        echo=True,
+        future=True,
+        pool_size=20,
+        max_overflow=20,
+        pool_recycle=3600,
+    )
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+    await engine.dispose()
+
+
+async def drop_tables():
+    from src.v1.features.models import Feature
+    from src.v1.payment_providers.models import PaymentProvider
+    from src.v1.plans.models import Plan, PlansToFeaturesLink
+    from src.v1.subscriptions.models import Subscription
+    from src.v1.invoices.models import Invoice
+    from src.v1.payments.models import Payment
+
+    engine = create_async_engine(
+        settings.pg_dsn,
+        echo=True,
+        future=True,
+        pool_size=20,
+        max_overflow=20,
+        pool_recycle=3600,
+    )
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.drop_all)
+    await engine.dispose()
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # startup
+    await drop_tables()
     await create_tables()
     # run
     yield
