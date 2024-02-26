@@ -57,8 +57,11 @@ class PaymentCreate(SQLModel):
     amount: int
 
 
-class PaymentUpdate(PaymentCreate):
-    ...
+class PaymentUpdate(SQLModel):
+    name: Optional[str] = Field(default=None)
+    status: Optional[PaymentStatusEnum] = Field(default=None)
+    currency: Optional[CurrencyEnum] = Field(default=None)
+    amount: Optional[int] = Field(default=None)
 
 
 class SinglePaymentResponse(BaseResponseBody):

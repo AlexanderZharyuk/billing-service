@@ -30,14 +30,12 @@ class Invoice(Base, TimeStampedMixin, table=True):
 
 
 class InvoiceCreate(SQLModel):
-    name: str
-    description: Optional[str] = Field(default=None)
     price: int
     subscription_id: int
 
 
-class InvoiceUpdate(InvoiceCreate):
-    ...
+class InvoiceUpdate(SQLModel):
+    price: Optional[int] = Field(default=None)
 
 
 class SingleInvoiceResponse(BaseResponseBody):

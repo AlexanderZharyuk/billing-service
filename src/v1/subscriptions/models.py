@@ -73,8 +73,14 @@ class SubscriptionCreate(SQLModel):
     status: SubscriptionStatusEnum
 
 
-class SubscriptionUpdate(SubscriptionCreate):
-    ...
+class SubscriptionUpdate(SQLModel):
+    name: Optional[str] = Field(default=None)
+    description: Optional[str] = Field(default=None)
+    user_id: Optional[UUID] = Field(default=None)
+    started_at: Optional[datetime] = Field(default=None)
+    ended_at: Optional[datetime] = Field(default=None)
+    plan_id: Optional[int] = Field(default=None)
+    status: Optional[SubscriptionStatusEnum] = Field(default=None)
 
 
 class SingleSubscriptionResponse(BaseResponseBody):

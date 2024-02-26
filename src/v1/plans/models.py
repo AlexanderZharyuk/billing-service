@@ -76,8 +76,14 @@ class PlanCreate(SQLModel):
     price_per_unit: Optional[int] = Field(default=None)
 
 
-class PlanUpdate(PlanCreate):
-    ...
+class PlanUpdate(SQLModel):
+    name: Optional[str] = Field(default=None)
+    description: Optional[str] = Field(default=None)
+    is_active: bool = Field(default=None)
+    is_recurring: bool = Field(default=None)
+    duration: Optional[int] = Field(default=None)
+    duration_unit: Optional[str] = Field(default=None)
+    price_per_unit: Optional[int] = Field(default=None)
 
 
 class SinglePlanResponse(BaseResponseBody):
