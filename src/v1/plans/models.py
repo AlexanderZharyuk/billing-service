@@ -1,3 +1,4 @@
+from decimal import Decimal
 from enum import Enum
 from typing import Optional, List
 
@@ -53,9 +54,11 @@ class Plan(Base, TimeStampedMixin, table=True):
         nullable=False,
         schema_extra={"examples": ["month", "year"]},
     )
-    price_per_unit: int = Field(
+    price_per_unit: Decimal = Field(
         nullable=False,
-        schema_extra={"examples": [1000]},
+        max_digits=8,
+        decimal_places=2,
+        schema_extra={"examples": [1000.00]},
     )
     subscriptions: List["Subscription"] = Relationship(back_populates="plan")
     features: List["Feature"] = Relationship(
@@ -73,7 +76,7 @@ class PlanCreate(SQLModel):
     is_recurring: bool = Field(default=True)
     duration: Optional[int] = Field(default=None)
     duration_unit: Optional[str] = Field(default=None)
-    price_per_unit: Optional[int] = Field(default=None)
+    price_per_unit: Optional[Decimal] = Field(default=None)
 
 
 class PlanUpdate(SQLModel):
@@ -83,7 +86,7 @@ class PlanUpdate(SQLModel):
     is_recurring: bool = Field(default=None)
     duration: Optional[int] = Field(default=None)
     duration_unit: Optional[str] = Field(default=None)
-    price_per_unit: Optional[int] = Field(default=None)
+    price_per_unit: Optional[Decimal] = Field(default=None)
 
 
 class SinglePlanResponse(BaseResponseBody):

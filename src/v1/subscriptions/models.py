@@ -57,10 +57,10 @@ class Subscription(Base, TimeStampedMixin, table=True):
     )
     plan_id: int = Field(foreign_key="plans.id")
     plan: Plan = Relationship(back_populates="subscriptions")
-    invoices: List["Invoice"] = Relationship(back_populates="subscription")
+    payments: List["Payment"] = Relationship(back_populates="subscription")
 
     def __repr__(self) -> str:
-        return f"Subscription(id={self.id!r}, name={self.name!r}, is_active={self.is_active!r}, user_id={self.user_id!r})"
+        return f"Subscription(id={self.id!r}, name={self.name!r}, user_id={self.user_id!r})"
 
 
 class SubscriptionCreate(SQLModel):
