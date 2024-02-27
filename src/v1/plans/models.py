@@ -1,11 +1,15 @@
 from decimal import Decimal
 from enum import Enum
-from typing import Optional, List
+from typing import Optional, List, TYPE_CHECKING
 
 from sqlmodel import SQLModel, Field, Relationship
 
 from src.models import BaseResponseBody, Base
 from src.models import TimeStampedMixin
+
+from src.v1.subscriptions.models import Subscription
+if TYPE_CHECKING:
+    from src.v1.features.models import Feature
 
 
 class DurationUnitEnum(str, Enum):
@@ -60,9 +64,14 @@ class Plan(Base, TimeStampedMixin, table=True):
         decimal_places=2,
         schema_extra={"examples": [1000.00]},
     )
-    subscriptions: List["Subscription"] = Relationship(back_populates="plan")
+    subscriptions: List["Subscription"] = Relationship(
+        back_populates="plan",
+        sa_relationship_kwargs={"lazy": "selectin"}
+    )
     features: List["Feature"] = Relationship(
-        back_populates="plans", link_model=PlansToFeaturesLink
+        back_populates="plans",
+        link_model=PlansToFeaturesLink,
+        sa_relationship_kwargs={"lazy": "selectin"}
     )
 
     def __repr__(self) -> str:

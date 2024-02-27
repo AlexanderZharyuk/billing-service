@@ -3,12 +3,10 @@ from __future__ import annotations
 import logging
 from typing import Sequence
 
-from sqlalchemy import exc
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from src.v1.exceptions import ServiceError
 from src.v1.features.exceptions import FeatureNotFoundError
 from src.v1.features.models import Feature
 from src.v1.features.models import FeatureCreate, FeatureUpdate

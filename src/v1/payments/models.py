@@ -6,6 +6,7 @@ from sqlmodel import SQLModel, Field, Relationship, CheckConstraint
 
 from src.models import BaseResponseBody, Base
 from src.models import TimeStampedMixin
+from src.v1.payment_providers.models import PaymentProvider
 
 
 class PaymentStatusEnum(str, Enum):
