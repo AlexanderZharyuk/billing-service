@@ -43,8 +43,10 @@ class PaymentProviderCreate(SQLModel):
     is_active: bool = Field(default=True)
 
 
-class PaymentProviderUpdate(PaymentProviderCreate):
-    ...
+class PaymentProviderUpdate(SQLModel):
+    name: Optional[str] = Field(default=None)
+    description: Optional[str] = Field(default=None)
+    is_active: Optional[bool] = Field(default=None)
 
 
 class SinglePaymentProviderResponse(BaseResponseBody):

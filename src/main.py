@@ -31,7 +31,6 @@ async def create_tables():
     from src.v1.payment_providers.models import PaymentProvider
     from src.v1.plans.models import Plan, PlansToFeaturesLink
     from src.v1.subscriptions.models import Subscription
-    from src.v1.invoices.models import Invoice
     from src.v1.payments.models import Payment
 
     engine = create_async_engine(
@@ -52,7 +51,6 @@ async def drop_tables():
     from src.v1.payment_providers.models import PaymentProvider
     from src.v1.plans.models import Plan, PlansToFeaturesLink
     from src.v1.subscriptions.models import Subscription
-    from src.v1.invoices.models import Invoice
     from src.v1.payments.models import Payment
 
     engine = create_async_engine(

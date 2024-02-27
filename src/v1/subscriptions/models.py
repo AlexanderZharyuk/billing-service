@@ -57,10 +57,10 @@ class Subscription(Base, TimeStampedMixin, table=True):
     )
     plan_id: int = Field(foreign_key="plans.id")
     plan: Plan = Relationship(back_populates="subscriptions")
-    invoices: List["Invoice"] = Relationship(back_populates="subscription")
+    payments: List["Payment"] = Relationship(back_populates="subscription")
 
     def __repr__(self) -> str:
-        return f"Subscription(id={self.id!r}, name={self.name!r}, is_active={self.is_active!r}, user_id={self.user_id!r})"
+        return f"Subscription(id={self.id!r}, name={self.name!r}, user_id={self.user_id!r})"
 
 
 class SubscriptionCreate(SQLModel):
@@ -73,8 +73,14 @@ class SubscriptionCreate(SQLModel):
     status: SubscriptionStatusEnum
 
 
-class SubscriptionUpdate(SubscriptionCreate):
-    ...
+class SubscriptionUpdate(SQLModel):
+    name: Optional[str] = Field(default=None)
+    description: Optional[str] = Field(default=None)
+    user_id: Optional[UUID] = Field(default=None)
+    started_at: Optional[datetime] = Field(default=None)
+    ended_at: Optional[datetime] = Field(default=None)
+    plan_id: Optional[int] = Field(default=None)
+    status: Optional[SubscriptionStatusEnum] = Field(default=None)
 
 
 class SingleSubscriptionResponse(BaseResponseBody):

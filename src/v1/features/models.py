@@ -49,8 +49,10 @@ class FeatureCreate(SQLModel):
     available_entities: Optional[list] = Field(default=[])
 
 
-class FeatureUpdate(FeatureCreate):
-    ...
+class FeatureUpdate(SQLModel):
+    name: Optional[str] = Field(default=None)
+    description: Optional[str] = Field(default=None)
+    available_entities: Optional[list] = Field(default=None)
 
 
 class SingleFeatureResponse(BaseResponseBody):
