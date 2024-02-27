@@ -34,10 +34,7 @@ class FeatureDatabaseService(BaseService):
     async def list(self, session: AsyncSession) -> Sequence[Feature]:
         statement = select(Feature).order_by(Feature.id)
         result = await session.exec(statement)
-        features = result.all()
-        if not result:
-            return []
-        return features
+        return result.all()
 
     @catch_sa_errors
     async def create(self, session: AsyncSession, data: FeatureCreate) -> Feature:
