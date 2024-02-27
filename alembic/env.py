@@ -7,7 +7,6 @@ from sqlalchemy.ext.asyncio import async_engine_from_config
 from sqlalchemy.engine import Connection
 
 from alembic import context
-from sqlmodel import SQLModel
 
 from src.core.config import settings
 from src.models import Base
@@ -16,6 +15,9 @@ from src.v1.payments.models import Payment
 from src.v1.payment_providers.models import PaymentProvider
 from src.v1.plans.models import Plan
 from src.v1.subscriptions.models import Subscription
+from src.models import Base
+
+target_metadata = Base.metadata
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -31,7 +33,6 @@ if config.config_file_name is not None:
 # for 'autogenerate' support
 # from myapp import mymodel
 # target_metadata = mymodel.Base.metadata
-target_metadata = SQLModel.metadata
 
 # other values from the config, defined by the needs of env.py,
 # can be acquired:

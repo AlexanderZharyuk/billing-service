@@ -1,9 +1,10 @@
 import logging
 from datetime import datetime
 
-
+from pydantic import BaseModel
 from sqlalchemy import DateTime, func
-from sqlmodel import SQLModel, MetaData, Field
+from sqlmodel import SQLModel, Field
+from sqlalchemy import MetaData
 
 logger = logging.getLogger(__name__)
 
@@ -20,7 +21,7 @@ class Base(SQLModel):
     metadata = MetaData(naming_convention=POSTGRES_INDEXES_NAMING_CONVENTION)
 
 
-class TimeStampedMixin(object):
+class TimeStampedMixin(BaseModel):
     created_at: datetime = Field(
         default_factory=datetime.utcnow,
         sa_type=DateTime(),
