@@ -61,8 +61,7 @@ class BasePostgresService(AbstractService):
         """Get entity model"""
         if not hasattr(self, "_model"):
             raise NotImplementedError(
-                "The required attribute `session` representing an instance of "
-                "`AsyncPostgresDatabaseProvider` is not implemented"
+                "The required attribute `model` not representing"
             )
         return self._model
 
