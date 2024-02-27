@@ -25,7 +25,7 @@ async def get_plan(
     "/",
     summary="Получить планы.",
     response_model=SeveralPlansResponse,
-    status_code=status.HTTP_201_CREATED,
+    status_code=status.HTTP_200_OK,
     description="Получить планы.",
 )
 async def get_plans(service: PostgresPlanService = PostgresPlanService) -> SeveralPlansResponse:
