@@ -111,8 +111,8 @@ class BasePostgresService(AbstractService):
             query_filter = self._build_filter(filter_)
             statement = select(self.model).filter(*query_filter)
         result = await self.session.execute(statement)
-        plans = result.scalars().all()
-        return plans if dump_to_model else [plan.model_dump() for plan in plans]
+        entities = result.scalars().all()
+        return entities if dump_to_model else [entity.model_dump() for entity in entities]
 
     async def create(self, entity: BaseModel, dump_to_model: bool = True) -> dict | BaseModel:
         model_to_save = self.model(**entity.model_dump())
