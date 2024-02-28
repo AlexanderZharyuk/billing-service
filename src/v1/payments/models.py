@@ -12,7 +12,7 @@ from src.v1.payment_providers.models import PaymentProvider
 class PaymentStatusEnum(str, Enum):
     CREATED = "created"
     PENDING = "pending"
-    PAID = "paid"
+    SUCCEEDED = "succeeded"
     EXPIRED = "expired"
     CANCELED = "cancelled"
 
@@ -38,6 +38,7 @@ class Payment(Base, TimeStampedMixin, table=True):
     subscription: "Subscription" = Relationship(back_populates="payments")
     payment_provider_id: int = Field(foreign_key="payment_providers.id")
     payment_provider: "PaymentProvider" = Relationship(back_populates="payments")
+    actual_payment_id: str = Field(default=None, max_length=50)
     status: PaymentStatusEnum = Field(default=PaymentStatusEnum.CREATED,)
     currency: CurrencyEnum = Field(default=CurrencyEnum.RUB,)
     amount: Decimal = Field(max_digits=8, decimal_places=2)

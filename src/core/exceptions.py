@@ -9,6 +9,7 @@ class BaseExceptionCodes:
     SERVICE_ERROR: int = 1000
     ENTITY_NOT_FOUND: int = 1001
     MULTIPLE_ENTITIES_FOUND: int = 1002
+    INVALID_PARAMS: int = 1003
 
 
 class ServiceError(HTTPException):
@@ -44,4 +45,16 @@ class MultipleEntitiesFoundError(HTTPException):
         message: str = "Multiple enities found.",
     ) -> None:
         detail = {"code": BaseExceptionCodes.MULTIPLE_ENTITIES_FOUND, "message": message}
+        super().__init__(status_code=status_code, detail=detail)
+
+
+class InvalidParamsError(HTTPException):
+    """Возвращаемая модель при возвращении нескольких объектах."""
+
+    def __init__(
+        self,
+        status_code: int = HTTPStatus.BAD_REQUEST,
+        message: str = "Invalid params for create entity.",
+    ) -> None:
+        detail = {"code": BaseExceptionCodes.INVALID_PARAMS, "message": message}
         super().__init__(status_code=status_code, detail=detail)
