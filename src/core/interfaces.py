@@ -1,51 +1,42 @@
 from abc import ABC, abstractmethod
 
-from typing import Any
+from typing import Any, Union, AsyncGenerator
 
 from pydantic import BaseModel
+from requests.exceptions import HTTPError
+from yookassa import Configuration, Payment, Receipt, Refund
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import MultipleResultsFound
 from sqlalchemy import select, delete
 
-from src.core.exceptions import EntityNotFoundError, MultipleEntitiesFoundError
+from src.core.config import settings
+from src.core.exceptions import EntityNotFoundError, MultipleEntitiesFoundError, InvalidParamsError
 
 
 class AbstractService(ABC):
-
     @abstractmethod
     async def get(self, entity_id: Any, dump_to_model: bool = True) -> dict | BaseModel:
         """Returns entity by id."""
 
     @abstractmethod
     async def get_one_by_filter(
-        self,
-        filter_: Any,
-        dump_to_model: bool = True
+        self, filter_: Any, dump_to_model: bool = True
     ) -> dict | BaseModel:
         """Returns entity by custom filter."""
 
     @abstractmethod
     async def get_all(
-        self,
-        filter_: dict | None = None,
-        dump_to_model: bool = True
+        self, filter_: dict | None = None, dump_to_model: bool = True
     ) -> list[dict] | list[BaseModel]:
         """Returns list of entities by filter."""
 
     @abstractmethod
-    async def create(
-        self,
-        entity: BaseModel,
-        dump_to_model: bool = True
-    ) -> dict | BaseModel:
+    async def create(self, entity: BaseModel, dump_to_model: bool = True) -> dict | BaseModel:
         """Creates entity."""
 
     @abstractmethod
     async def update(
-        self,
-        entity_id: str,
-        data: BaseModel,
-        dump_to_model: bool = True
+        self, entity_id: str, data: BaseModel, dump_to_model: bool = True
     ) -> dict | BaseModel:
         """Updates entity."""
 
@@ -55,14 +46,11 @@ class AbstractService(ABC):
 
 
 class BasePostgresService(AbstractService):
-
     @property
     def model(self):
         """Get entity model"""
         if not hasattr(self, "_model"):
-            raise NotImplementedError(
-                "The required attribute `model` not representing"
-            )
+            raise NotImplementedError("The required attribute `model` not representing")
         return self._model
 
     @property
@@ -84,9 +72,7 @@ class BasePostgresService(AbstractService):
         return result if dump_to_model else result.model_dump()
 
     async def get_one_by_filter(
-        self,
-        filter_: dict,
-        dump_to_model: bool = True
+        self, filter_: dict, dump_to_model: bool = True
     ) -> dict | BaseModel:
         query_filter = self._build_filter(filter_)
         statement = select(self.model).filter(*query_filter)
@@ -102,9 +88,7 @@ class BasePostgresService(AbstractService):
         return entity if dump_to_model else entity.model_dump()
 
     async def get_all(
-        self,
-        filter_: dict | None = None,
-        dump_to_model: bool = True
+        self, filter_: dict | None = None, dump_to_model: bool = True
     ) -> list[dict] | list[BaseModel]:
         statement = select(self.model)
         if filter_:
@@ -132,11 +116,79 @@ class BasePostgresService(AbstractService):
         return query_filter
 
     async def update(
-        self,
-        entity_id: str, data: BaseModel,
-        dump_to_model: bool = True
+        self, entity_id: str, data: BaseModel, dump_to_model: bool = True
     ) -> dict | BaseModel:
         pass
 
     async def delete(self, entity_id: str) -> None:
         pass
+
+
+class AbstractProvider(ABC):
+    @abstractmethod
+    async def get(self, type_object: Any, entity_id: Any, dump_to_model: bool = True) -> dict:
+        """Returns entity by id."""
+
+    @abstractmethod
+    async def get_all(
+        self, type_object: Any, params: dict | None = None, dump_to_model: bool = True
+    ) -> AsyncGenerator:
+        """Returns list of entity by custom filter."""
+
+    @abstractmethod
+    async def create(
+        self,
+        type_object: Union[Payment, Receipt, Refund],
+        params: dict,
+        dump_to_model: bool = True,
+    ) -> dict:
+        """Creates entity."""
+
+
+class BaseYookassaProvider(AbstractProvider):
+    def __init__(self):
+        Configuration.configure(settings.shop_id, settings.shop_key)
+
+    async def get(
+        self,
+        type_object: Union[Payment, Receipt, Refund],
+        entity_id: Any,
+        dump_to_model: bool = True,
+    ) -> dict:
+        try:
+            result = type_object.find_one(entity_id)
+        except HTTPError:
+            raise EntityNotFoundError(message=f"{entity_id} not found")
+        return result if dump_to_model else dict(**result)
+
+    async def get_all(
+        self,
+        type_object: Union[Payment, Receipt, Refund],
+        params: dict | None = None,
+        dump_to_model: bool = True,
+    ) -> AsyncGenerator:
+        cursor = None
+        while True:
+            if cursor:
+                params['cursor'] = cursor
+            try:
+                result = type_object.list(params) if params else type_object.list()
+                yield result
+                if not result.next_cursor or not params:
+                    break
+                else:
+                    cursor = result.next_cursor
+            except HTTPError:
+                raise MultipleEntitiesFoundError
+
+    async def create(
+        self,
+        type_object: Union[Payment, Receipt, Refund],
+        params: dict,
+        dump_to_model: bool = True,
+    ) -> dict:
+        try:
+            result = type_object.create(params)
+        except HTTPError:
+            raise InvalidParamsError
+        return result if dump_to_model else dict(**result)
