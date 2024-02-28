@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 from enum import Enum
-from typing import Optional, List
+from typing import Optional, List, TYPE_CHECKING
 from uuid import UUID
 
 from sqlalchemy import DateTime
@@ -9,7 +9,10 @@ from sqlmodel import SQLModel, Field, Relationship
 
 from src.models import BaseResponseBody, Base
 from src.models import TimeStampedMixin
-from src.v1.plans.models import Plan
+
+from src.v1.payments.models import Payment
+if TYPE_CHECKING:
+    from src.v1.plans.models import Plan
 
 
 class SubscriptionStatusEnum(str, Enum):
@@ -56,8 +59,8 @@ class Subscription(Base, TimeStampedMixin, table=True):
         schema_extra={"examples": ["2023-01-01T00:00:00"]},
     )
     plan_id: int = Field(foreign_key="plans.id")
-    plan: Plan = Relationship(back_populates="subscriptions")
-    payments: List["Payment"] = Relationship(back_populates="subscription")
+    plan: "Plan" = Relationship(back_populates="subscriptions", sa_relationship_kwargs={"lazy": "selectin"})
+    payments: List["Payment"] = Relationship(back_populates="subscription", sa_relationship_kwargs={"lazy": "selectin"})
 
     def __repr__(self) -> str:
         return f"Subscription(id={self.id!r}, name={self.name!r}, user_id={self.user_id!r})"

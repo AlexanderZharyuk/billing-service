@@ -3,13 +3,13 @@ from typing import AsyncGenerator
 
 from fastapi import Depends
 from sqlalchemy.ext.asyncio import create_async_engine
-from sqlmodel.ext.asyncio.session import AsyncSession
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.core.config import settings
 from src.db.storages import DatabaseStorage
 
 
-class PostgresDatabaseStorage(DatabaseStorage):
+class AsyncPostgresDatabaseProvider(DatabaseStorage):
     """Класс БД PostgreSQL"""
 
     def __init__(self):
@@ -25,5 +25,5 @@ class PostgresDatabaseStorage(DatabaseStorage):
         await self.engine.dispose()
 
 
-db_session = PostgresDatabaseStorage()
-DatabaseSession = Annotated[AsyncSession, Depends(db_session)]
+db_provider = AsyncPostgresDatabaseProvider()
+DatabaseSession = Annotated[AsyncSession, Depends(db_provider)]
