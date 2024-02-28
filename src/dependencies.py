@@ -5,7 +5,7 @@ from fastapi.security import APIKeyCookie, APIKeyHeader
 
 from src.core.config import settings
 from src.constants import ENV
-from src.v1.exceptions import ServiceError
+from src.core.exceptions import ServiceError
 
 
 cookie_scheme = APIKeyCookie(name=settings.session_cookie_name, auto_error=False)

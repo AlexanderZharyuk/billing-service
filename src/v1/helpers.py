@@ -4,7 +4,7 @@ from functools import wraps
 from sqlalchemy import exc
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from src.v1.exceptions import ServiceError
+from src.core.exceptions import ServiceError
 
 logger = logging.getLogger(__name__)
 
