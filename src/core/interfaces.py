@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from enum import Enum
 
 from typing import Any, Union, AsyncGenerator
 
@@ -11,6 +12,10 @@ from sqlalchemy import select, delete
 
 from src.core.config import settings
 from src.core.exceptions import EntityNotFoundError, MultipleEntitiesFoundError, InvalidParamsError
+
+
+class TypeProvider(Enum):
+    YOOKASSA = "YooKassa"
 
 
 class AbstractService(ABC):
@@ -138,11 +143,16 @@ class AbstractProvider(ABC):
     @abstractmethod
     async def create(
         self,
-        type_object: Union[Payment, Receipt, Refund],
+        type_object: Any,
         params: dict,
         dump_to_model: bool = True,
     ) -> dict:
         """Creates entity."""
+
+    @classmethod
+    def get_provider(cls, type_provider: TypeProvider):
+        match type_provider:
+            case TypeProvider.YOOKASSA: return BaseYookassaProvider()
 
 
 class BaseYookassaProvider(AbstractProvider):
@@ -192,3 +202,7 @@ class BaseYookassaProvider(AbstractProvider):
         except HTTPError:
             raise InvalidParamsError
         return result if dump_to_model else dict(**result)
+
+
+def get_provider_from_user_choice(type_provider: TypeProvider) -> AbstractProvider:
+    return AbstractProvider.get_provider(type_provider)
