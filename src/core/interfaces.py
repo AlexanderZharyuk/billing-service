@@ -133,10 +133,20 @@ class BasePostgresService(AbstractService):
 
     async def update(
         self,
-        entity_id: str, data: BaseModel,
+        entity_id: str,
+        data: BaseModel,
         dump_to_model: bool = True
     ) -> dict | BaseModel:
-        pass
+        entity = await self.get(entity_id)
+        for attribute, value in data.model_dump(exclude_none=True).items():
+            if hasattr(entity, attribute):
+                setattr(entity, attribute, value)
+        await self.session.commit()
+        await self.session.flush(entity)
+
+        return entity if dump_to_model else entity.model_dump()
 
     async def delete(self, entity_id: str) -> None:
-        pass
+        statement = delete(self.model).where(self.model.id == entity_id)
+        await self.session.execute(statement)
+        await self.session.commit()
