@@ -19,29 +19,41 @@ class TypeProvider(Enum):
 
 
 class AbstractService(ABC):
+
     @abstractmethod
     async def get(self, entity_id: Any, dump_to_model: bool = True) -> dict | BaseModel:
         """Returns entity by id."""
 
     @abstractmethod
     async def get_one_by_filter(
-        self, filter_: Any, dump_to_model: bool = True
+        self,
+        filter_: Any,
+        dump_to_model: bool = True
     ) -> dict | BaseModel:
         """Returns entity by custom filter."""
 
     @abstractmethod
     async def get_all(
-        self, filter_: dict | None = None, dump_to_model: bool = True
+        self,
+        filter_: dict | None = None,
+        dump_to_model: bool = True
     ) -> list[dict] | list[BaseModel]:
         """Returns list of entities by filter."""
 
     @abstractmethod
-    async def create(self, entity: BaseModel, dump_to_model: bool = True) -> dict | BaseModel:
+    async def create(
+        self,
+        entity: BaseModel,
+        dump_to_model: bool = True
+    ) -> dict | BaseModel:
         """Creates entity."""
 
     @abstractmethod
     async def update(
-        self, entity_id: str, data: BaseModel, dump_to_model: bool = True
+        self,
+        entity_id: str,
+        data: BaseModel,
+        dump_to_model: bool = True
     ) -> dict | BaseModel:
         """Updates entity."""
 
@@ -51,11 +63,14 @@ class AbstractService(ABC):
 
 
 class BasePostgresService(AbstractService):
+
     @property
     def model(self):
         """Get entity model"""
         if not hasattr(self, "_model"):
-            raise NotImplementedError("The required attribute `model` not representing")
+            raise NotImplementedError(
+                "The required attribute `model` not representing"
+            )
         return self._model
 
     @property
@@ -77,7 +92,9 @@ class BasePostgresService(AbstractService):
         return result if dump_to_model else result.model_dump()
 
     async def get_one_by_filter(
-        self, filter_: dict, dump_to_model: bool = True
+        self,
+        filter_: dict,
+        dump_to_model: bool = True
     ) -> dict | BaseModel:
         query_filter = self._build_filter(filter_)
         statement = select(self.model).filter(*query_filter)
@@ -93,7 +110,9 @@ class BasePostgresService(AbstractService):
         return entity if dump_to_model else entity.model_dump()
 
     async def get_all(
-        self, filter_: dict | None = None, dump_to_model: bool = True
+        self,
+        filter_: dict | None = None,
+        dump_to_model: bool = True
     ) -> list[dict] | list[BaseModel]:
         statement = select(self.model)
         if filter_:
@@ -121,12 +140,24 @@ class BasePostgresService(AbstractService):
         return query_filter
 
     async def update(
-        self, entity_id: str, data: BaseModel, dump_to_model: bool = True
+        self,
+        entity_id: str,
+        data: BaseModel,
+        dump_to_model: bool = True
     ) -> dict | BaseModel:
-        pass
+        entity = await self.get(entity_id)
+        for attribute, value in data.model_dump(exclude_none=True).items():
+            if hasattr(entity, attribute):
+                setattr(entity, attribute, value)
+        await self.session.commit()
+        await self.session.flush(entity)
+
+        return entity if dump_to_model else entity.model_dump()
 
     async def delete(self, entity_id: str) -> None:
-        pass
+        statement = delete(self.model).where(self.model.id == entity_id)
+        await self.session.execute(statement)
+        await self.session.commit()
 
 
 class AbstractProvider(ABC):
