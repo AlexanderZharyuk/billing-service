@@ -200,7 +200,7 @@ class BaseYookassaProvider(AbstractProvider):
             result = type_object.find_one(entity_id)
         except HTTPError:
             raise EntityNotFoundError(message=f"{entity_id} not found")
-        return result if dump_to_model else dict(**result)
+        return result if dump_to_model else dict(result)
 
     async def get_all(
         self,
@@ -214,13 +214,14 @@ class BaseYookassaProvider(AbstractProvider):
                 params['cursor'] = cursor
             try:
                 result = type_object.list(params) if params else type_object.list()
-                yield result
+                data = result.items if dump_to_model else [dict(r) for r in result.items]
+                yield data
                 if not result.next_cursor or not params:
                     break
                 else:
                     cursor = result.next_cursor
             except HTTPError:
-                raise MultipleEntitiesFoundError
+                raise InvalidParamsError
 
     async def create(
         self,

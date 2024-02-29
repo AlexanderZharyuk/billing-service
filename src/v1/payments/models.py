@@ -1,7 +1,9 @@
+from uuid import UUID
 from decimal import Decimal
 from enum import Enum
 from typing import Optional
 
+from pydantic import BaseModel
 from sqlmodel import SQLModel, Field, Relationship, CheckConstraint
 
 from src.models import BaseResponseBody, Base
@@ -18,9 +20,9 @@ class PaymentStatusEnum(str, Enum):
 
 
 class CurrencyEnum(str, Enum):
-    RUB = "rub"
-    USD = "usd"
-    EUR = "eur"
+    RUB = "RUB"
+    USD = "USD"
+    EUR = "EUR"
 
 
 class Payment(Base, TimeStampedMixin, table=True):
@@ -47,10 +49,16 @@ class Payment(Base, TimeStampedMixin, table=True):
         return f"Payment(id={self.id!r}, status={self.status!r}, amount={self.amount!r}, currency={self.currency!r})"
 
 
+class PaymentMetadata(BaseModel):
+    subscription_id: int
+    payment_provider_id: int
+    user_id: UUID
+
 class PaymentCreate(SQLModel):
     name: str
     subscription_id: int
     payment_provider_id: int
+    actual_payment_id: str = Field(default=None, max_length=50)
     status: PaymentStatusEnum
     currency: CurrencyEnum
     amount: Decimal
