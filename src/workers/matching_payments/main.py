@@ -2,6 +2,7 @@ import asyncio
 
 from sqlmodel.ext.asyncio.session import AsyncSession
 
+from src.core.config import settings
 from src.workers.helpers import session_injection
 from src.workers.matching_payments import logger
 from src.workers.matching_payments.worker import MatchingSuccessPayments
@@ -15,7 +16,7 @@ async def main(session: AsyncSession = None):
         worker = MatchingSuccessPayments(session=session)
         await worker.matching_data()
         logger.info("The worker has completed the work.")
-        await asyncio.sleep(5)  # ToDo: add parametr "sleep" for config
+        await asyncio.sleep(settings.worker_time_sleep)
 
 
 if __name__ == "__main__":

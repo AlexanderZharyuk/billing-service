@@ -223,7 +223,7 @@ class BaseYookassaProvider(AbstractProvider):
                 params['cursor'] = cursor
             try:
                 result = type_object.list(params) if params else type_object.list()
-                data = result.items if dump_to_model else [dict(r) for r in result.items]
+                data = result.items if dump_to_model else [dict(entity) for entity in result.items]
                 yield data
                 if not result.next_cursor or not params:
                     break

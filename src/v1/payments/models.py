@@ -50,7 +50,7 @@ class Payment(Base, TimeStampedMixin, table=True):
 
 
 class PaymentMetadata(BaseModel):
-    subscription_id: int
+    plan_id: int
     payment_provider_id: int
     user_id: UUID
 

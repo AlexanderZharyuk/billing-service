@@ -35,6 +35,8 @@ class Settings(BaseSettings):
     shop_id: str = "set_JpHidKUSa3DDsGO2o1EXXQGL4XXgv1XwwAj6nnNmTt0"
     shop_key: str = "000000"
 
+    worker_time_sleep: int = 120
+
     debug: bool = False
 
     @cached_property

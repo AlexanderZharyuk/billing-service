@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from yookassa import Payment as yoPayment
 from sqlmodel.ext.asyncio.session import AsyncSession
@@ -22,7 +22,7 @@ class MatchingSuccessPayments(BasePostgresService):
         self.type_object = yoPayment
         self.payment_status = PaymentStatusEnum.SUCCEEDED.value
         self.date_format = "%Y-%m-%dT%H:%M:%SZ"
-        self.date_now = datetime.utcnow().strftime(self.date_format)
+        self.date_now = datetime.utcnow()
 
     async def matching_data(self) -> None:
         payments_for_provider = await self.get_payments_for_provider()
@@ -33,32 +33,31 @@ class MatchingSuccessPayments(BasePostgresService):
             return
         for item in diff:
             object_ = await self.provider.get(type_object=self.type_object, entity_id=item)
-            payment_metadata = PaymentMetadata(
-                subscription_id=4, payment_provider_id=1, user_id=uuid.uuid4()
-            )
+            payment_metadata = PaymentMetadata(**object_.metadata)
             payment = PaymentCreate(
                 name=object_.description,
-                subscription_id=payment_metadata.subscription_id,
+                subscription_id=payment_metadata.plan_id, #ToDo: correct after update model Payment
                 payment_provider_id=payment_metadata.payment_provider_id,
                 status=self.payment_status,
                 currency=object_.amount.currency,
                 amount=object_.amount.value,
                 actual_payment_id=object_.id,
             )
-            # ToDo: add method for create subscripton
+            # ToDo: add method for create Subscripton after correct model Subscription
             create_payment = await super().create(payment)
             logger.info(f"A payment has been created with id {create_payment.id}.")
 
     async def get_payments_for_provider(self) -> list[str]:
         params = {
             "status": self.payment_status,
-            "created_at.gte": self.date_now,
+            "created_at.lt": self.date_now.strftime(self.date_format),
         }
         payments = []
         try:
             logger.info("Uploading payments from a payment provider...")
             result = self.provider.get_all(type_object=self.type_object, params=params)
             async for res in result:
+                #todo:
                 for item in res:
                     payments.append(item.id)
             logger.info(f"Unloaded {len(payments)} payments from a payment provider")
@@ -70,10 +69,10 @@ class MatchingSuccessPayments(BasePostgresService):
 
     async def get_payments_for_db(self) -> list[str]:
         try:
-            filter_ = {
-                "status": self.payment_status,
-                # "created_at": datetime.utcnow() #ToDo: release after create method for db
-            }
+            filter_ = (
+                Payment.status == self.payment_status,
+                Payment.created_at < self.date_now
+            )
             logger.info("Uploading payments from a database...")
             result = await super().get_all(filter_=filter_)
             logger.info(f"Unloaded {len(result)} payments from a database.")
