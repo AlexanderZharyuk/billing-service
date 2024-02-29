@@ -36,7 +36,7 @@ class AbstractService(ABC):
     @abstractmethod
     async def get_all(
         self,
-        filter_: dict | None = None,
+        filter_: dict | tuple | None = None,
         dump_to_model: bool = True
     ) -> list[dict] | list[BaseModel]:
         """Returns list of entities by filter."""
@@ -94,11 +94,13 @@ class BasePostgresService(AbstractService):
 
     async def get_one_by_filter(
         self,
-        filter_: dict,
+        filter_: dict | tuple,
         dump_to_model: bool = True
     ) -> dict | BaseModel:
-        query_filter = self._build_filter(filter_)
-        statement = select(self.model).filter(*query_filter)
+        if isinstance(filter_, dict):
+            filter_ = self._build_filter(filter_)
+
+        statement = select(self.model).filter(*filter_)
         result = await self.session.execute(statement)
         try:
             entity = result.scalar_one_or_none()
@@ -116,11 +118,11 @@ class BasePostgresService(AbstractService):
         dump_to_model: bool = True
     ) -> list[dict] | list[BaseModel]:
         statement = select(self.model)
+
         if filter_:
-            query_filter = filter_
-            if isinstance(query_filter, dict):
-                query_filter = self._build_filter(filter_)
-            statement = statement.filter(*query_filter)
+            if isinstance(filter_, dict):
+                filter_ = self._build_filter(filter_)
+            statement = statement.filter(*filter_)
 
         result = await self.session.execute(statement)
         entities = result.scalars().all()

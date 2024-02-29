@@ -21,7 +21,7 @@ class PlanService(BasePostgresService):
 
     async def get_one_by_filter(
         self,
-        filter_: dict,
+        filter_: dict | tuple,
         dump_to_model: bool = True
     ) -> dict | BaseModel:
         try:
