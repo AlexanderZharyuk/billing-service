@@ -12,6 +12,7 @@ from sqlalchemy import select, delete
 
 from src.core.config import settings
 from src.core.exceptions import EntityNotFoundError, MultipleEntitiesFoundError, InvalidParamsError
+from src.core.helpers import rollback_transaction
 
 
 class TypeProvider(Enum):
@@ -35,7 +36,7 @@ class AbstractService(ABC):
     @abstractmethod
     async def get_all(
         self,
-        filter_: dict | None = None,
+        filter_: dict | tuple | None = None,
         dump_to_model: bool = True
     ) -> list[dict] | list[BaseModel]:
         """Returns list of entities by filter."""
@@ -93,11 +94,13 @@ class BasePostgresService(AbstractService):
 
     async def get_one_by_filter(
         self,
-        filter_: dict,
+        filter_: dict | tuple,
         dump_to_model: bool = True
     ) -> dict | BaseModel:
-        query_filter = self._build_filter(filter_)
-        statement = select(self.model).filter(*query_filter)
+        if isinstance(filter_, dict):
+            filter_ = self._build_filter(filter_)
+
+        statement = select(self.model).filter(*filter_)
         result = await self.session.execute(statement)
         try:
             entity = result.scalar_one_or_none()
@@ -111,17 +114,21 @@ class BasePostgresService(AbstractService):
 
     async def get_all(
         self,
-        filter_: dict | None = None,
+        filter_: dict | tuple | None = None,
         dump_to_model: bool = True
     ) -> list[dict] | list[BaseModel]:
         statement = select(self.model)
+
         if filter_:
-            query_filter = self._build_filter(filter_)
-            statement = select(self.model).filter(*query_filter)
+            if isinstance(filter_, dict):
+                filter_ = self._build_filter(filter_)
+            statement = statement.filter(*filter_)
+
         result = await self.session.execute(statement)
         entities = result.scalars().all()
         return entities if dump_to_model else [entity.model_dump() for entity in entities]
 
+    @rollback_transaction(method="CREATE")
     async def create(self, entity: BaseModel, dump_to_model: bool = True) -> dict | BaseModel:
         model_to_save = self.model(**entity.model_dump())
         self.session.add(model_to_save)
@@ -139,6 +146,7 @@ class BasePostgresService(AbstractService):
             query_filter.append(attribute == value)
         return query_filter
 
+    @rollback_transaction(method="UPDATE")
     async def update(
         self,
         entity_id: str,
@@ -154,6 +162,7 @@ class BasePostgresService(AbstractService):
 
         return entity if dump_to_model else entity.model_dump()
 
+    @rollback_transaction(method="DELETE")
     async def delete(self, entity_id: str) -> None:
         statement = delete(self.model).where(self.model.id == entity_id)
         await self.session.execute(statement)
