@@ -2,7 +2,7 @@ import logging
 from functools import wraps
 from typing import Callable
 
-from sqlalchemy import exc
+from sqlalchemy.exc import SQLAlchemyError
 
 from src.core.exceptions import ServiceError
 
@@ -18,7 +18,7 @@ def rollback_transaction(method: str):
         async def wrapper(cls, *args, **kwargs):
             try:
                 return await function(cls, *args, **kwargs)
-            except exc.SQLAlchemyError as error:
+            except SQLAlchemyError as error:
                 logger.error(
                     f"Can't commit transaction for model: {cls.model.__name__}. Method: {method}. "
                     f"Exception: {error}"
