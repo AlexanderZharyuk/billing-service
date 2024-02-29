@@ -1,3 +1,5 @@
+import logging
+
 from abc import ABC, abstractmethod
 from enum import Enum
 
@@ -13,6 +15,9 @@ from sqlalchemy import select, delete
 from src.core.config import settings
 from src.core.exceptions import EntityNotFoundError, MultipleEntitiesFoundError, InvalidParamsError
 from src.core.helpers import rollback_transaction
+
+
+logger = logging.getLogger(__name__)
 
 
 class TypeProvider(Enum):
@@ -76,18 +81,20 @@ class BasePostgresService(AbstractService):
 
     @property
     def session(self) -> AsyncSession:
-        """Get database session"""
         """Returns async PostgreSQL database session."""
         if not hasattr(self, "_session"):
             raise NotImplementedError(
                 "The required attribute `session` representing an instance of "
-                "`AsyncPostgresDatabaseProvider` is not implemented"
+                "`DatabaseProvider` is not implemented"
             )
         return self._session
 
     async def get(self, entity_id: Any, dump_to_model: bool = True) -> dict | BaseModel:
         result = await self.session.get(self.model, entity_id)
         if result is None:
+            logger.info(
+                f"Requested entity not found. Entity id: {entity_id}. Model: {self.model.__name__}"
+            )
             raise EntityNotFoundError(message=f"{self.model.__name__} not found")
 
         return result if dump_to_model else result.model_dump()
@@ -105,6 +112,10 @@ class BasePostgresService(AbstractService):
         try:
             entity = result.scalar_one_or_none()
         except MultipleResultsFound:
+            logger.info(
+                f"Get multiple entities with filter: {filter_} but expected one. "
+                f"Model: {self.model.__name__}"
+            )
             raise MultipleEntitiesFoundError
 
         if not entity:
@@ -140,6 +151,9 @@ class BasePostgresService(AbstractService):
         query_filter = []
         for attribute, value in filter_params.items():
             if not hasattr(self.model, attribute):
+                logger.error(
+                    f"Invalid filter attribute `{attribute}` for model: {self.model.__name__}"
+                )
                 raise AttributeError(f"Attribute {attribute} is not allowed for this model")
 
             attribute = getattr(self.model, attribute)
@@ -206,8 +220,15 @@ class BaseYookassaProvider(AbstractProvider):
         dump_to_model: bool = True,
     ) -> dict:
         try:
+            logger.info(
+                f"Trying to get object of {type_object.__name__} with id {entity_id} from YooKassa"
+            )
             result = type_object.find_one(entity_id)
-        except HTTPError:
+        except HTTPError as error:
+            logger.error(
+                f"Getting object of {type_object.__name__} with id {entity_id} "
+                f"from YooKassa was failed. Error detail: {error}"
+            )
             raise EntityNotFoundError(message=f"{entity_id} not found")
         return result if dump_to_model else dict(**result)
 
@@ -238,8 +259,16 @@ class BaseYookassaProvider(AbstractProvider):
         dump_to_model: bool = True,
     ) -> dict:
         try:
+            logger.info(
+                f"Trying to create object of {type_object.__name__} with params: {params} "
+                f"in YooKassa provider"
+            )
             result = type_object.create(params)
-        except HTTPError:
+        except HTTPError as error:
+            logger.error(
+                f"Creating object of {type_object.__name__} in YooKassa provider was failed. "
+                f"Params: {params}. Details: {error}"
+            )
             raise InvalidParamsError
         return result if dump_to_model else dict(**result)
 
