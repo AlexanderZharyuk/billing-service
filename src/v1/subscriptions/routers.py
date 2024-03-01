@@ -8,7 +8,7 @@ from src.v1.subscriptions.models import (
     SubscriptionCreate,
     SingleSubscriptionResponse,
     SeveralSubscriptionsResponse,
-    SubscriptionUpdate,
+    SubscriptionPause,
 )
 from src.v1.subscriptions.service import PostgresSubscriptionService
 
@@ -81,11 +81,15 @@ async def create_subscription(
 )
 async def pause_subscription(
     subscription_id: int,
-    data: SubscriptionUpdate,
+    data: SubscriptionPause,
     service: PostgresSubscriptionService = PostgresSubscriptionService,
     current_user: User = Depends(get_current_user),
 ) -> SingleSubscriptionResponse:
-    subscription = await service.update(entity_id=subscription_id, data=data)
+    subscription = await service.update(
+        entity_id=subscription_id,
+        data=data,
+        user=current_user if not is_admin(current_user) else None
+    )
     return SingleSubscriptionResponse(data=subscription)
 
 

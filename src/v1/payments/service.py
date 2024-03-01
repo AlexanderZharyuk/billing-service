@@ -119,7 +119,7 @@ class PaymentService(BasePostgresService):
         # сохранить id платежа провайдера в БД
         payment_update = PaymentUpdate(
             status=payment_provider_payment.status,
-            provider_payment_id=payment_provider_payment.id,
+            external_payment_id=payment_provider_payment.id,
             provider_payment_type_id=payment_provider_payment.payment_method.id,
             is_provider_payment_saved=payment_provider_payment.payment_method.saved,
         )

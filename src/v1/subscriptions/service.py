@@ -9,7 +9,12 @@ from src.db.postgres import DatabaseSession
 from src.models import User
 from src.v1.payments.models import PaymentCreate
 from src.v1.plans.service import PostgresPlanService
-from src.v1.subscriptions.models import Subscription, SubscriptionUpdate, SubscriptionCreate
+from src.v1.subscriptions.models import (
+    Subscription,
+    SubscriptionPause,
+    SubscriptionCreate,
+    SubscriptionUpdate,
+)
 from src.v1.payments.service import PostgresPaymentService
 
 
@@ -65,9 +70,24 @@ class SubscriptionService(BasePostgresService):
         return payment_url
 
     async def update(
-        self, entity_id: str, data: SubscriptionUpdate, dump_to_model: bool = True
+        self,
+        entity_id: str,
+        data: SubscriptionPause,
+        user: User | None = None,
+        dump_to_model: bool = True,
     ) -> dict | Subscription:
-        updated_subscription = await super().update(entity_id, data, dump_to_model)
+        if user:
+            subscription = await self.get_one_by_filter(
+                filter_={"id": entity_id, "user_id": user.id}
+            )
+            if not subscription:
+                raise EntityNotFoundError
+
+        update_data = SubscriptionUpdate(
+            status=data.status,
+            ended_at=data.ended_at,
+        )
+        updated_subscription = await super().update(entity_id, update_data, dump_to_model)
         return updated_subscription
 
     async def delete(self, entity_id: Any) -> None:

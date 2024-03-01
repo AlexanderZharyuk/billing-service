@@ -80,9 +80,14 @@ class SubscriptionCreate(SQLModel):
     payment_method: PaymentMethodsEnum
 
 
-class SubscriptionUpdate(SQLModel):
+class SubscriptionPause(SQLModel):
     status: UserSubscriptionStatusEnum
     pause_duration: SubscriptionPauseDurationEnum
+
+
+class SubscriptionUpdate(SQLModel):
+    status: UserSubscriptionStatusEnum
+    ended_at: datetime
 
 
 class SingleSubscriptionResponse(BaseResponseBody):

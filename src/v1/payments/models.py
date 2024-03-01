@@ -62,7 +62,7 @@ class Payment(Base, TimeStampedMixin, table=True):
         default=CurrencyEnum.RUB,
     )
     amount: Decimal = Field(max_digits=8, decimal_places=2)
-    provider_payment_id: Optional[str] = Field(default=None, max_length=50)
+    external_payment_id: Optional[str] = Field(default=None, max_length=50)
     provider_payment_type_id: Optional[str] = Field(default=None, max_length=50)
 
     def __repr__(self) -> str:
@@ -81,7 +81,6 @@ class PaymentUpdate(SQLModel):
     status: Optional[PaymentStatusEnum] = Field(default=None)
     provider_payment_id: Optional[str] = Field(default=None)
     provider_payment_type_id: Optional[str] = Field(default=None)
-    is_provider_payment_saved: Optional[bool] = Field(default=None)
 
 
 class PaymentMetadata(SQLModel):
