@@ -50,6 +50,11 @@ def is_admin(user: User) -> bool:
     return False
 
 
+async def get_superuser(token: str | None = Depends(cookie_scheme)) -> bool:
+    user = await verify_and_get_user(token)
+    return is_admin(user)
+
+
 async def is_trusted_resource(token: str = Depends(header_scheme)) -> bool:
     if ENV == "dev":
         return True

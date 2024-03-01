@@ -1,5 +1,6 @@
 import logging
 from datetime import datetime
+from enum import Enum
 from typing import List
 from uuid import UUID
 
@@ -30,6 +31,12 @@ class User(SQLModel):
     full_name: str
     is_superuser: bool
     roles: List[str]
+
+
+class CurrencyEnum(str, Enum):
+    RUB = "RUB"
+    USD = "USD"
+    EUR = "EUR"
 
 
 class TimeStampedMixin(BaseModel):

@@ -2,7 +2,7 @@ from typing import Any, Annotated
 
 from fastapi import Depends
 from pydantic import BaseModel
-from yookassa import Payment as YookassaPayment
+from yookassa import Payment as PPPayment
 from yookassa.domain.common.confirmation_type import ConfirmationType
 from yookassa.domain.models.receipt import Receipt, ReceiptItem
 from yookassa.domain.request import PaymentRequest
@@ -23,8 +23,8 @@ from src.v1.payments.models import (
     PaymentUpdate,
     PaymentCreate,
     PaymentMetadata,
+    PaymentObjectCreate,
 )
-from src.v1.plans import Plan
 from src.v1.plans.service import PostgresPlanService
 
 
@@ -54,37 +54,43 @@ class PaymentService(BasePostgresService):
         payments = await super().get_all(dump_to_model=dump_to_model)
         return payments
 
+    @staticmethod
     def create_payment_request(
-        self, entity: PaymentCreate, payment: Payment, plan: Plan, user: User, return_url: str
+        entity: PaymentCreate,
+        user: User = None,
     ) -> PaymentRequest:
         metadata = PaymentMetadata(
-            plan_id=entity.plan_id,
-            payment_id=payment.id,
-            user_id=user.id,
+            plan_id=entity.plan.id,
+            user_id=user.id if user else entity.user_id,
             payment_provider_id=entity.payment_provider_id,
         )
+
         receipt = Receipt()
-        receipt.customer = user.model_dump(exclude={"id", "is_superuser", "roles"})
+        receipt.customer = (
+            user.model_dump(exclude={"id", "is_superuser", "roles"})
+            if user
+            else {"user_id": entity.user_id}
+        )
         receipt.items = [
             ReceiptItem(
                 {
-                    "name": plan.name,
-                    "description": plan.description,
+                    "name": entity.plan.name,
+                    "description": entity.plan.description,
                     "quantity": 1,
-                    "amount": {"value": plan.price_per_unit, "currency": entity.currency},
+                    "amount": {"value": entity.amount, "currency": entity.currency},
                 }
             )
         ]
 
         builder = PaymentRequestBuilder()
-        builder.set_amount({"value": plan.price_per_unit, "currency": entity.currency}).set_confirmation(
+        builder.set_amount({"value": entity.amount, "currency": entity.currency}).set_confirmation(
             {
                 "type": ConfirmationType.REDIRECT,
-                "return_url": return_url,
+                "return_url": entity.return_url if entity.return_url else "",
             }
         ).set_capture(False).set_metadata(metadata.model_dump()).set_receipt(receipt)
 
-        if plan.is_recurring:
+        if entity.plan.is_recurring:
             builder.set_payment_method_data({"type": entity.payment_type}).set_save_payment_method(
                 True
             )
@@ -92,47 +98,41 @@ class PaymentService(BasePostgresService):
         return builder.build()
 
     async def create(
-        self, entity: PaymentCreate, user: User, return_url: str, dump_to_model: bool = True
+        self, entity: PaymentCreate, user: User = None, dump_to_model: bool = True
     ) -> str:
-        # создать платеж со статусом created в БД
-        payment = await super().create(entity)
-
-        # найти провайдера по id
-        payment_provider = await self.payment_provider_service.get_one_by_filter(
+        pp = await self.payment_provider_service.get_one_by_filter(
             filter_={"id": entity.payment_provider_id}
         )
-        plan = entity.plan
+        if not pp:
+            raise EntityNotFoundError(message="Payment provider not found")
 
-        # получить воркера для работы с провайдером
-        payment_provider_worker = get_provider_from_user_choice(payment_provider.name)
+        if not entity.plan:
+            entity.plan = await self.plan_service.get_one_by_filter(
+                filter_={"id": entity.plan_id, "is_active": True}
+            )
 
-        # создать рекуррентный платеж в провайдере, получить id платежа и ссылку для редиректа
-        payment_request = self.create_payment_request(
-            entity=entity, payment=payment, plan=plan, user=user, return_url=return_url
+        pp_worker = get_provider_from_user_choice(pp.name)
+        pp_request = self.create_payment_request(entity=entity, user=user)
+        pp_payment = await pp_worker.create(
+            type_object=PPPayment,
+            params=pp_request,
         )
-        payment_provider_payment = await payment_provider_worker.create(
-            type_object=YookassaPayment,
-            params=payment_request,
-            idempotency_key=payment.id,
+        payment = PaymentObjectCreate(
+            payment_provider_id=entity.payment_provider_id,
+            payment_method=entity.payment_method,
+            currency=entity.currency,
+            amount=entity.amount,
+            status=pp_payment.status,
+            external_payment_id=pp_payment.id,
+            external_payment_type_id=pp_payment.payment_method.id,
         )
-
-        # сохранить id платежа провайдера в БД
-        payment_update = PaymentUpdate(
-            status=payment_provider_payment.status,
-            external_payment_id=payment_provider_payment.id,
-            provider_payment_type_id=payment_provider_payment.payment_method.id,
-            is_provider_payment_saved=payment_provider_payment.payment_method.saved,
-        )
-        await super().update(payment.id, payment_update)
-
-        # вернуть редирект на страницу платежного провайдера для оплаты
-        return payment_provider_payment.confirmation.confirmation_url
+        await super().create(payment)
+        return pp_payment.confirmation.confirmation_url
 
     async def update(
         self, entity_id: str, data: PaymentUpdate, dump_to_model: bool = True
     ) -> dict | Payment:
-        updated_payment = await super().update(entity_id, data, dump_to_model)
-        return updated_payment
+        raise NotImplementedError
 
     async def delete(self, entity_id: Any) -> None:
         raise NotImplementedError

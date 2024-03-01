@@ -5,8 +5,9 @@ from typing import Optional, List, TYPE_CHECKING
 from uuid import UUID
 
 from sqlalchemy import DateTime
-from sqlmodel import SQLModel, Field, Relationship
-from src.v1.payments.models import CurrencyEnum, PaymentMethodsEnum
+from sqlmodel import SQLModel, Field, Relationship, Column, Enum as SQLModelEnum
+from src.v1.payments.models import PaymentMethodsEnum
+from src.models import CurrencyEnum
 from src.models import BaseResponseBody, Base
 from src.models import TimeStampedMixin
 
@@ -15,11 +16,15 @@ if TYPE_CHECKING:
     from src.v1.payments.models import Payment
 
 
-class UserSubscriptionStatusEnum(str, Enum):
+class UserSubscriptionPauseEnum(str, Enum):
     PAUSED = "paused"
 
 
-class SubscriptionStatusEnum(UserSubscriptionStatusEnum):
+class UserSubscriptionCancelEnum(str, Enum):
+    CANCELED = "canceled"
+
+
+class SubscriptionStatusEnum(str, Enum):
     CREATED = "created"
     ACTIVE = "active"
     EXPIRED = "expired"
@@ -27,15 +32,13 @@ class SubscriptionStatusEnum(UserSubscriptionStatusEnum):
     PAUSED = "paused"
 
 
-class SubscriptionPauseDurationEnum(UserSubscriptionStatusEnum):
-    ONE_MONTH = "one_month"
-    THREE_MONTHS = "three_months"
-
-
 class Subscription(Base, TimeStampedMixin, table=True):
     """Модель таблицы с подписками."""
 
     __tablename__ = "subscriptions"
+
+    class Config:
+        arbitrary_types_allowed = True
 
     id: Optional[int] = Field(
         default=None,
@@ -46,8 +49,9 @@ class Subscription(Base, TimeStampedMixin, table=True):
         index=True,
         schema_extra={"examples": [uuid.uuid4()]},
     )
-    status: SubscriptionStatusEnum = Field(
+    status: SQLModelEnum[SubscriptionStatusEnum] = Field(
         default=SubscriptionStatusEnum.CREATED,
+        sa_column=Column(SQLModelEnum(SubscriptionStatusEnum)),
     )
     started_at: datetime = Field(
         default_factory=datetime.utcnow,
@@ -80,24 +84,21 @@ class SubscriptionCreate(SQLModel):
     currency: CurrencyEnum
     payment_method: PaymentMethodsEnum
     user_id: Optional[UUID] = Field(default=None)
-
-
-class SubscriptionUpdate(SQLModel):
-    status: UserSubscriptionStatusEnum
-    pause_duration: SubscriptionPauseDurationEnum
-    payment_provider_id: int
-    currency: CurrencyEnum
-    payment_method: PaymentMethodsEnum
+    return_url: Optional[str] = Field(default=None)
 
 
 class SubscriptionPause(SQLModel):
-    status: UserSubscriptionStatusEnum
-    pause_duration: SubscriptionPauseDurationEnum
+    status: UserSubscriptionPauseEnum
+    pause_duration_days: int = Field(default=7, ge=1, le=30)
 
 
 class SubscriptionUpdate(SQLModel):
-    status: UserSubscriptionStatusEnum
+    status: UserSubscriptionPauseEnum = Field(default=UserSubscriptionPauseEnum.PAUSED)
     ended_at: datetime
+
+
+class SubscriptionCancel(SQLModel):
+    status: UserSubscriptionCancelEnum = Field(default=UserSubscriptionCancelEnum.CANCELED)
 
 
 class SingleSubscriptionResponse(BaseResponseBody):

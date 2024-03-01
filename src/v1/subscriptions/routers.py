@@ -1,4 +1,6 @@
-from fastapi import APIRouter, status, Depends, Request
+from typing import Annotated
+
+from fastapi import APIRouter, status, Depends, Request, Path
 from fastapi.responses import RedirectResponse
 
 from src.dependencies import get_current_user, is_admin
@@ -16,14 +18,14 @@ router = APIRouter(prefix="/subscriptions", tags=["Subscriptions"])
 
 
 @router.get(
-    "/{id}",
+    "/{subscription_id}",
     summary="Получить подписку",
     response_model=SingleSubscriptionResponse,
     status_code=status.HTTP_200_OK,
     description="Получить информацию о подписке.",
 )
 async def get_subscription(
-    subscription_id: int,
+    subscription_id: Annotated[int, Path(examples=[1])],
     service: PostgresSubscriptionService = PostgresSubscriptionService,
     current_user: User = Depends(get_current_user),
 ) -> SingleSubscriptionResponse:
@@ -57,7 +59,7 @@ async def get_subscriptions(
 @router.post(
     "/",
     summary="Создать подписку",
-    response_model=RedirectResponse,
+    response_model=BaseResponseBody,
     status_code=status.HTTP_307_TEMPORARY_REDIRECT,
     description="Создать подписку.",
 )
@@ -66,21 +68,22 @@ async def create_subscription(
     request: Request,
     service: PostgresSubscriptionService = PostgresSubscriptionService,
     current_user: User = Depends(get_current_user),
-) -> RedirectResponse:
-    return_url = request.url_for("payments")
-    subscription = await service.create(entity=data, user=current_user, return_url=return_url)
-    return RedirectResponse(subscription.return_url)
+) -> BaseResponseBody:
+    if data.return_url is None:
+        data.return_url = request.url_for("payments")
+    redirect_url = await service.create(entity=data, user=current_user)
+    return BaseResponseBody(data={"redirect_url": redirect_url})
 
 
 @router.patch(
-    "/{id}",
+    "/{subscription_id}",
     summary="Приостановить подписку",
     response_model=SingleSubscriptionResponse,
     status_code=status.HTTP_200_OK,
     description="Приостановить подписку.",
 )
 async def pause_subscription(
-    subscription_id: int,
+    subscription_id: Annotated[int, Path(examples=[1])],
     data: SubscriptionPause,
     service: PostgresSubscriptionService = PostgresSubscriptionService,
     current_user: User = Depends(get_current_user),
@@ -88,25 +91,25 @@ async def pause_subscription(
     subscription = await service.update(
         entity_id=subscription_id,
         data=data,
-        user=current_user if not is_admin(current_user) else None
+        user=current_user if not is_admin(current_user) else None,
     )
     return SingleSubscriptionResponse(data=subscription)
 
 
 @router.delete(
-    "/{id}",
+    "/{subscription_id}",
     summary="Отменить подписку",
     response_model=BaseResponseBody,
     status_code=status.HTTP_200_OK,
     description="Отменить подписку.",
 )
 async def cancel_subscription(
-    subscription_id: int,
+    subscription_id: Annotated[int, Path(examples=[1])],
     service: PostgresSubscriptionService = PostgresSubscriptionService,
     current_user: User = Depends(get_current_user),
 ) -> BaseResponseBody:
-    await service.delete(subscription_id)
-    return BaseResponseBody(data={"success": True})
-
-
-
+    subscription = await service.update(
+        entity_id=subscription_id,
+        user=current_user if not is_admin(current_user) else None,
+    )
+    return SingleSubscriptionResponse(data=subscription)

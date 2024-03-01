@@ -1,3 +1,4 @@
+import datetime
 from typing import Any, Annotated
 
 from pydantic import BaseModel
@@ -14,6 +15,7 @@ from src.v1.subscriptions.models import (
     SubscriptionPause,
     SubscriptionCreate,
     SubscriptionUpdate,
+    SubscriptionCancel,
 )
 from src.v1.payments.service import PostgresPaymentService
 
@@ -45,17 +47,17 @@ class SubscriptionService(BasePostgresService):
         return subscriptions
 
     async def create(
-        self, entity: SubscriptionCreate, user: User, return_url: str, dump_to_model: bool = True
+        self, entity: SubscriptionCreate, user: User = None, dump_to_model: bool = True
     ) -> str:
         plan = await self.plan_service.get_one_by_filter(
             filter_={"id": entity.plan_id, "is_active": True}
         )
         if not plan:
-            raise InvalidParamsError()
+            raise InvalidParamsError(message="Plan not found")
 
         amount = list(filter(lambda x: x.currency == entity.currency, plan.prices))
         if not amount or len(amount) > 1:
-            raise InvalidParamsError()
+            raise InvalidParamsError(message="Price not found")
 
         payment_create = PaymentCreate(
             plan=plan,
@@ -64,10 +66,11 @@ class SubscriptionService(BasePostgresService):
             currency=entity.currency,
             amount=amount[0],
         )
-        payment_url = await self.payment_service.create(
-            entity=payment_create, user=user, return_url=return_url
+        confirmation_url = await self.payment_service.create(
+            entity=payment_create,
+            user=user,
         )
-        return payment_url
+        return confirmation_url
 
     async def update(
         self,
@@ -81,17 +84,30 @@ class SubscriptionService(BasePostgresService):
                 filter_={"id": entity_id, "user_id": user.id}
             )
             if not subscription:
-                raise EntityNotFoundError
+                raise EntityNotFoundError(message="Subscription not found")
 
+        subscription = await self.get(entity_id, dump_to_model)
         update_data = SubscriptionUpdate(
             status=data.status,
-            ended_at=data.ended_at,
+            ended_at=subscription.ended_at + datetime.timedelta(days=data.pause_duration_days),
         )
         updated_subscription = await super().update(entity_id, update_data, dump_to_model)
         return updated_subscription
 
-    async def delete(self, entity_id: Any) -> None:
-        await super().delete(entity_id)
+    async def delete(
+        self,
+        entity_id: Any,
+        user: User | None = None,
+    ) -> dict | Subscription:
+        if user:
+            subscription = await self.get_one_by_filter(
+                filter_={"id": entity_id, "user_id": user.id}
+            )
+            if not subscription:
+                raise EntityNotFoundError(message="Subscription not found")
+
+        canceled_subscription = await super().update(entity_id, SubscriptionCancel())
+        return canceled_subscription
 
 
 def get_subscription_service(session: DatabaseSession) -> SubscriptionService:
