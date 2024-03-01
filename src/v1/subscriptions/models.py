@@ -78,6 +78,7 @@ class SubscriptionCreate(SQLModel):
     payment_provider_id: int
     currency: CurrencyEnum
     payment_method: PaymentMethodsEnum
+    user_id: Optional[UUID] = Field(default=None)
 
 
 class SubscriptionUpdate(SQLModel):
