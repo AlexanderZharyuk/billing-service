@@ -3,7 +3,6 @@ from enum import Enum
 from typing import Optional, List, TYPE_CHECKING
 
 from sqlmodel import SQLModel, Field, Relationship, Column, Enum as SQLModelEnum
-from sqlalchemy.dialects.postgresql import ENUM
 from src.models import BaseResponseBody, Base
 from src.models import TimeStampedMixin
 from src.models import CurrencyEnum
@@ -37,7 +36,7 @@ class Price(Base, table=True):
     )
     plan_id: Optional[int] = Field(default=None, foreign_key="plans.id")
     plan: "Plan" = Relationship(back_populates="prices")
-    currency: SQLModelEnum[CurrencyEnum] = Field(
+    currency: CurrencyEnum = Field(
         default=CurrencyEnum.RUB, sa_column=Column(SQLModelEnum(CurrencyEnum))
     )
     amount: Decimal = Field(

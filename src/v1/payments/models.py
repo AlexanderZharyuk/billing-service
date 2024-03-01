@@ -50,13 +50,13 @@ class Payment(Base, TimeStampedMixin, table=True):
     subscription: "Subscription" = Relationship(back_populates="payments")
     payment_provider_id: int = Field(foreign_key="payment_providers.id")
     payment_provider: "PaymentProvider" = Relationship(back_populates="payments")
-    payment_method: SQLModelEnum[PaymentMethodsEnum] = Field(
+    payment_method: PaymentMethodsEnum = Field(
         default=PaymentMethodsEnum.BANK_CARD, sa_column=Column(SQLModelEnum(PaymentMethodsEnum))
     )
-    status: SQLModelEnum[PaymentStatusEnum] = Field(
+    status: PaymentStatusEnum = Field(
         default=PaymentStatusEnum.CREATED, sa_column=Column(SQLModelEnum(PaymentMethodsEnum))
     )
-    currency: SQLModelEnum[CurrencyEnum] = Field(
+    currency: CurrencyEnum = Field(
         default=CurrencyEnum.RUB,
         sa_column=Column(SQLModelEnum(CurrencyEnum)),
     )

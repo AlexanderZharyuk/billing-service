@@ -49,7 +49,7 @@ class Subscription(Base, TimeStampedMixin, table=True):
         index=True,
         schema_extra={"examples": [uuid.uuid4()]},
     )
-    status: SQLModelEnum[SubscriptionStatusEnum] = Field(
+    status: SubscriptionStatusEnum = Field(
         default=SubscriptionStatusEnum.CREATED,
         sa_column=Column(SQLModelEnum(SubscriptionStatusEnum)),
     )
