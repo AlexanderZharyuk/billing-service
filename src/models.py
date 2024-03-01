@@ -1,5 +1,7 @@
 import logging
 from datetime import datetime
+from typing import List
+from uuid import UUID
 
 from pydantic import BaseModel
 from sqlalchemy import DateTime, func
@@ -19,6 +21,15 @@ POSTGRES_INDEXES_NAMING_CONVENTION = {
 
 class Base(SQLModel):
     metadata = MetaData(naming_convention=POSTGRES_INDEXES_NAMING_CONVENTION)
+
+
+class User(SQLModel):
+    id: UUID
+    email: str
+    username: str
+    full_name: str
+    is_superuser: bool
+    roles: List[str]
 
 
 class TimeStampedMixin(BaseModel):
