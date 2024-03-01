@@ -24,6 +24,7 @@ class SubscriptionStatusEnum(UserSubscriptionStatusEnum):
     ACTIVE = "active"
     EXPIRED = "expired"
     CANCELED = "cancelled"
+    PAUSED = "paused"
 
 
 class SubscriptionPauseDurationEnum(UserSubscriptionStatusEnum):
@@ -75,6 +76,15 @@ class Subscription(Base, TimeStampedMixin, table=True):
 class SubscriptionCreate(SQLModel):
     started_at: datetime
     plan_id: int
+    payment_provider_id: int
+    currency: CurrencyEnum
+    payment_method: PaymentMethodsEnum
+    user_id: Optional[UUID] = Field(default=None)
+
+
+class SubscriptionUpdate(SQLModel):
+    status: UserSubscriptionStatusEnum
+    pause_duration: SubscriptionPauseDurationEnum
     payment_provider_id: int
     currency: CurrencyEnum
     payment_method: PaymentMethodsEnum
