@@ -35,7 +35,7 @@ class Price(Base, table=True):
     plan_id: Optional[int] = Field(default=None, foreign_key="plans.id")
     plan: "Plan" = Relationship(back_populates="prices")
     currency: CurrencyEnum = Field(default=CurrencyEnum.RUB)
-    price: Decimal = Field(
+    amount: Decimal = Field(
         max_digits=8,
         decimal_places=2,
         schema_extra={"examples": [1000.00]},
