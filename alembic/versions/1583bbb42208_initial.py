@@ -100,6 +100,7 @@ def downgrade() -> None:
     op.drop_table('payments')
     op.drop_index(op.f('subscriptions_user_id_idx'), table_name='subscriptions')
     op.drop_index(op.f('subscriptions_name_idx'), table_name='subscriptions')
+    op.drop_table('subscriptions')
     op.drop_table('planstofeatureslink')
     op.drop_index(op.f('plans_name_idx'), table_name='plans')
     op.drop_table('plans')
