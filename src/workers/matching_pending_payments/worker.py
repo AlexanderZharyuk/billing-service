@@ -1,11 +1,11 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from yookassa import Payment as yoPayment
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from src.core.interfaces import BasePostgresService, TypeProvider, get_provider_from_user_choice
 from src.core.exceptions import InvalidParamsError
-from src.v1.payments.models import Payment, PaymentMetadata, PaymentCreate, PaymentStatusEnum
+from src.v1.payments.models import Payment, PaymentMetadata, PaymentStatusEnum, PaymentUpdate
 from src.v1.plans.models import Plan
 from src.v1.features.models import Feature
 from src.v1.payment_providers.models import PaymentProvider
@@ -25,17 +25,19 @@ class MatchingPendingPayments(BasePostgresService):
     async def matching_data(self) -> None:
         payments_for_provider = await self.get_payments_for_provider()
         payments_for_db = await self.get_payments_for_db()
-        diff = set(payments_for_db).intersection(set(payments_for_provider))
         print(payments_for_db)
-        print(diff)
-        if len(diff) == 0:
+        print(payments_for_provider)
+        intersection_items = set(payments_for_db).intersection(set(payments_for_provider))
+        different_items = set(payments_for_db).difference(set(payments_for_provider))
+        print(different_items)
+        if len(intersection_items) == 0:
             logger.info("No discrepancies in payments were found.")
             return
-        for item in diff:
+        for item in intersection_items:
             object_ = await self.provider.get(type_object=self.type_object, entity_id=item)
-            print(*object_)
-            payment = await super().get_one_by_filter((Payment.actual_payment_id == object_.id,))
-            print(payment)
+            payment = await super().get_one_by_filter((Payment.external_payment_id == object_.id,))
+            result = await super().update(entity_id=payment.id, data=PaymentUpdate(status=PaymentStatusEnum.SUCCEEDED)) #ToDo: отдельный метод для обновления
+            print(result)
             # ToDo: add method for create Subscripton after correct model Subscription
 
     async def get_payments_for_provider(self) -> list[str]:
@@ -66,7 +68,7 @@ class MatchingPendingPayments(BasePostgresService):
             logger.info("Uploading payments from a database...")
             result = await super().get_all(filter_=filter_)
             logger.info(f"Unloaded {len(result)} payments from a database.")
-            result = [res.actual_payment_id for res in result]
+            result = [res.external_payment_id for res in result]
             return result
         except AttributeError as error:
             logger.info(f"An error occurred when requesting payments from the database:{error}")

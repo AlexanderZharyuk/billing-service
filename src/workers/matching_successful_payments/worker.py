@@ -24,7 +24,7 @@ class MatchingSuccessPayments(BasePostgresService):
         self.payment_status = PaymentStatusEnum.SUCCEEDED.value
         self.date_format = "%Y-%m-%dT%H:%M:%SZ"
         self.date_now = datetime.utcnow()
-        self.early_date = self.date_now - timedelta(hours=1)
+        self.early_date = self.date_now - timedelta(hours=2) #ToDo: hours=1
 
     async def matching_data(self) -> None:
         payments_for_provider = await self.get_payments_for_provider()
@@ -36,17 +36,24 @@ class MatchingSuccessPayments(BasePostgresService):
         for item in diff:
             object_ = await self.provider.get(type_object=self.type_object, entity_id=item)
             payment_metadata = PaymentMetadata(**object_.metadata)
+            plan = await self.plan_service.get(entity_id=payment_metadata.plan_id)
             payment = PaymentCreate(
-                name=object_.description,
-                subscription_id=payment_metadata.plan_id, #ToDo: correct after update model Payment
                 payment_provider_id=payment_metadata.payment_provider_id,
-                status=self.payment_status,
+                payment_method=object_.payment_method.type,
                 currency=object_.amount.currency,
                 amount=object_.amount.value,
-                actual_payment_id=object_.id,
+                external_payment_id=object_.id,
+                status=self.payment_status
             )
-            # ToDo: add method for create Subscripton after correct model Subscription
+            subscription = SubscriptionCreate(
+                plan_id = payment_metadata.plan_id,
+                payment_provider_id=payment_metadata.payment_provider_id,
+                currency=object_.amount.currency,
+                payment_method=object_.payment_method.type,
+                user_id=payment_metadata.user_id
+            )
             create_payment = await super().create(payment)
+            # ToDo: add method for create Subscripton after correct model Subscription
             logger.info(f"A payment has been created with id {create_payment.id}.")
 
     async def get_payments_for_provider(self) -> list[str]:
@@ -71,7 +78,6 @@ class MatchingSuccessPayments(BasePostgresService):
 
     async def get_payments_for_db(self) -> list[str]:
         try:
-            print(self.early_date, self.date_now)
             filter_ = (
                 Payment.status == self.payment_status,
                 Payment.created_at > self.early_date,
@@ -80,11 +86,7 @@ class MatchingSuccessPayments(BasePostgresService):
             logger.info("Uploading payments from a database...")
             result = await super().get_all(filter_=filter_)
             logger.info(f"Unloaded {len(result)} payments from a database.")
-            result = [res.actual_payment_id for res in result]
+            result = [res.external_payment_id for res in result]
             return result
         except AttributeError as error:
             logger.info(f"An error occurred when requesting payments from the database:{error}")
-
-    async def get_plan(self) -> Plan: #ToDo: функция излишня, оставить только вызов метода
-        result = await self.plan_service.get(entity_id=4, dump_to_model=True)
-        return result

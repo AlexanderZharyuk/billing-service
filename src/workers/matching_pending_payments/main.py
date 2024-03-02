@@ -16,7 +16,7 @@ async def main(session: AsyncSession = None):
         worker = MatchingPendingPayments(session=session)
         await worker.matching_data()
         logger.info("The worker has completed the work.")
-        break
+        break #ToDo: DELETE ROW
         await asyncio.sleep(settings.worker_time_sleep) #ToDo: время сна должно быть дольше
 
 
