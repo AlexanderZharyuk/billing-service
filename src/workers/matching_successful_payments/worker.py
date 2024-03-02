@@ -13,7 +13,7 @@ class MatchingSuccessPayments(BasePaymentMatchingWorker):
     def __init__(self, session: AsyncSession = None, type_provider=TypeProvider.YOOKASSA):
         super().__init__(session, type_provider)
         self.payment_status = PaymentStatusEnum.SUCCEEDED.value
-        self.early_date = self.date_now - timedelta(hours=12)  # ToDo: hours=1
+        self.early_date = self.date_now - timedelta(hours=1)
 
     async def matching_data(self) -> None:
         params = {
