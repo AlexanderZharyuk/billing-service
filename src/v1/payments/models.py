@@ -6,14 +6,12 @@ from uuid import UUID
 from sqlmodel import CheckConstraint
 from sqlmodel import SQLModel, Field, Relationship, Column, Enum as SQLModelEnum
 
-from src.models import BaseResponseBody, Base
-from src.models import TimeStampedMixin, CurrencyEnum
+from src.models import BaseResponseBody, Base, TimeStampedMixin, CurrencyEnum
 from src.v1.payment_providers.models import PaymentProvider
 
 if TYPE_CHECKING:
     from src.v1.subscriptions.models import Subscription
     from src.v1.payment_providers.models import PaymentProvider
-    from src.v1.plans import Plan
 
 
 class PaymentStatusEnum(str, Enum):
@@ -69,7 +67,6 @@ class Payment(Base, TimeStampedMixin, table=True):
 
 
 class PaymentCreate(SQLModel):
-    plan: Optional["Plan"] = Field(default=None)
     plan_id: Optional[int] = Field(default=None)
     payment_provider_id: int
     payment_method: PaymentMethodsEnum
@@ -97,7 +94,7 @@ class PaymentUpdate(SQLModel):
 
 class PaymentMetadata(SQLModel):
     payment_provider_id: int
-    user_id: str
+    user_id: str | UUID
     plan_id: int
 
 

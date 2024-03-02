@@ -21,11 +21,16 @@ from src.v1.payments.service import PostgresPaymentService
 
 
 class SubscriptionService(BasePostgresService):
-    def __init__(self, session: DatabaseSession):
+    def __init__(
+        self,
+        session: DatabaseSession,
+        payment_service: PostgresPaymentService,
+        plan_service: PostgresPlanService,
+    ):
         self._model = Subscription
         self._session = session
-        self.payment_service: PostgresPaymentService
-        self.plan_service: PostgresPlanService
+        self.payment_service = payment_service
+        self.plan_service = plan_service
 
     async def get(self, entity_id: Any, dump_to_model: bool = True) -> dict | BaseModel:
         subscription = await super().get(entity_id, dump_to_model)
@@ -60,11 +65,13 @@ class SubscriptionService(BasePostgresService):
             raise InvalidParamsError(message="Price not found")
 
         payment_create = PaymentCreate(
-            plan=plan,
+            plan_id=plan.id,
             payment_provider_id=entity.payment_provider_id,
             payment_method=entity.payment_method,
             currency=entity.currency,
-            amount=amount[0],
+            amount=amount[0].amount,
+            user_id=user.id if user else entity.user_id,
+            return_url=entity.return_url,
         )
         confirmation_url = await self.payment_service.create(
             entity=payment_create,
@@ -110,8 +117,12 @@ class SubscriptionService(BasePostgresService):
         return canceled_subscription
 
 
-def get_subscription_service(session: DatabaseSession) -> SubscriptionService:
-    return SubscriptionService(session)
+def get_subscription_service(
+    session: DatabaseSession,
+    payment_service: PostgresPaymentService,
+    plan_service: PostgresPlanService,
+) -> SubscriptionService:
+    return SubscriptionService(session, payment_service, plan_service)
 
 
 PostgresSubscriptionService = Annotated[SubscriptionService, Depends(get_subscription_service)]

@@ -14,6 +14,7 @@ from src.core.interfaces import (
     get_provider_from_user_choice,
 )
 from src.db.postgres import DatabaseSession
+from src.core.interfaces import TypeProvider
 from src.models import User
 from src.v1.payment_providers.service import (
     PostgresPaymentProviderService,
@@ -25,13 +26,19 @@ from src.v1.payments.models import (
     PaymentMetadata,
     PaymentObjectCreate,
 )
+from src.v1.plans import Plan
 from src.v1.plans.service import PostgresPlanService
 
 
 class PaymentService(BasePostgresService):
-    def __init__(self, session: DatabaseSession):
-        self.payment_provider_service: PostgresPaymentProviderService
-        self.plan_service: PostgresPlanService
+    def __init__(
+        self,
+        session: DatabaseSession,
+        payment_provider_service: PostgresPaymentProviderService,
+        plan_service: PostgresPlanService,
+    ):
+        self.payment_provider_service = payment_provider_service
+        self.plan_service = plan_service
         self._model = Payment
         self._session = session
 
@@ -57,27 +64,36 @@ class PaymentService(BasePostgresService):
     @staticmethod
     def create_payment_request(
         entity: PaymentCreate,
+        plan: Plan,
         user: User = None,
     ) -> PaymentRequest:
         metadata = PaymentMetadata(
-            plan_id=entity.plan.id,
-            user_id=user.id if user else entity.user_id,
+            plan_id=plan.id,
+            user_id=str(user.id if user else entity.user_id),
             payment_provider_id=entity.payment_provider_id,
         )
 
         receipt = Receipt()
-        receipt.customer = (
+        customer = (
             user.model_dump(exclude={"id", "is_superuser", "roles"})
             if user
-            else {"user_id": entity.user_id}
+            else {
+                "user_id": str(entity.user_id),
+                "phone": "79990000000",
+                "email": "test@email.com",
+            }
         )
+        receipt.customer = {**customer}
+        receipt.tax_system_code = 1
         receipt.items = [
             ReceiptItem(
                 {
-                    "name": entity.plan.name,
-                    "description": entity.plan.description,
+                    "name": plan.name,
+                    "description": plan.description,
                     "quantity": 1,
                     "amount": {"value": entity.amount, "currency": entity.currency},
+                    "vat_code": 1,
+                    "tax_system_id": 1,
                 }
             )
         ]
@@ -88,14 +104,15 @@ class PaymentService(BasePostgresService):
                 "type": ConfirmationType.REDIRECT,
                 "return_url": entity.return_url if entity.return_url else "",
             }
-        ).set_capture(False).set_metadata(metadata.model_dump()).set_receipt(receipt)
+        ).set_capture(True).set_metadata(metadata.model_dump()).set_receipt(receipt)
 
-        if entity.plan.is_recurring:
-            builder.set_payment_method_data({"type": entity.payment_type}).set_save_payment_method(
-                True
-            )
+        if plan.is_recurring:
+            builder.set_payment_method_data(
+                {"type": entity.payment_method}
+            ).set_save_payment_method(True)
 
-        return builder.build()
+        b = builder.build()
+        return b
 
     async def create(
         self, entity: PaymentCreate, user: User = None, dump_to_model: bool = True
@@ -106,13 +123,15 @@ class PaymentService(BasePostgresService):
         if not pp:
             raise EntityNotFoundError(message="Payment provider not found")
 
-        if not entity.plan:
-            entity.plan = await self.plan_service.get_one_by_filter(
-                filter_={"id": entity.plan_id, "is_active": True}
-            )
+        plan = await self.plan_service.get_one_by_filter(
+            filter_={"id": entity.plan_id, "is_active": True}
+        )
 
-        pp_worker = get_provider_from_user_choice(pp.name)
-        pp_request = self.create_payment_request(entity=entity, user=user)
+        if not (pp_worker_enum := TypeProvider._value2member_map_.get(pp.name)):
+            raise EntityNotFoundError(message="Payment provider worker not found")
+
+        pp_worker = get_provider_from_user_choice(pp_worker_enum)
+        pp_request = self.create_payment_request(entity=entity, plan=plan, user=user)
         pp_payment = await pp_worker.create(
             type_object=PPPayment,
             params=pp_request,
@@ -138,8 +157,12 @@ class PaymentService(BasePostgresService):
         raise NotImplementedError
 
 
-def get_payment_service(session: DatabaseSession) -> PaymentService:
-    return PaymentService(session)
+def get_payment_service(
+    session: DatabaseSession,
+    payment_provider_service: PostgresPaymentProviderService,
+    plan_service: PostgresPlanService,
+) -> PaymentService:
+    return PaymentService(session, payment_provider_service, plan_service)
 
 
 PostgresPaymentService = Annotated[PaymentService, Depends(get_payment_service)]

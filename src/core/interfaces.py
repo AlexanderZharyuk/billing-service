@@ -1,3 +1,4 @@
+import logging
 from abc import ABC, abstractmethod
 from enum import Enum
 
@@ -222,10 +223,11 @@ class BaseYookassaProvider(AbstractProvider):
     ) -> dict | Union[PaymentResponse, ReceiptResponse, RefundResponse]:
         try:
             result = type_object.create(params, idempotency_key=idempotency_key)
-        except HTTPError:
+        except HTTPError as error:
+            logging.exception(error)
             raise InvalidParamsError
         return result if dump_to_model else dict(**result)
 
 
-def get_provider_from_user_choice(type_provider: TypeProvider) -> AbstractProvider:
+def get_provider_from_user_choice(type_provider: TypeProvider | Enum) -> AbstractProvider:
     return AbstractProvider.get_provider(type_provider)

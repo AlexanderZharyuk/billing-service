@@ -24,6 +24,7 @@ async def verify_and_get_user(token: str) -> User | None:
             "email": "johndoe@example.com",
             "is_superuser": False,
             "roles": ["user"],
+            "phone": "79999999999",
         }
     else:
         # Auth service verifies token and return user information
@@ -34,7 +35,7 @@ async def verify_and_get_user(token: str) -> User | None:
 
                 if auth_response := await resp.json():
                     user = auth_response
-    return User.model_validate(**user)
+    return User(**user)
 
 
 async def get_current_user(token: str | None = Depends(cookie_scheme)) -> dict | None:

@@ -7,9 +7,7 @@ from uuid import UUID
 from sqlalchemy import DateTime
 from sqlmodel import SQLModel, Field, Relationship, Column, Enum as SQLModelEnum
 from src.v1.payments.models import PaymentMethodsEnum
-from src.models import CurrencyEnum
-from src.models import BaseResponseBody, Base
-from src.models import TimeStampedMixin
+from src.models import CurrencyEnum, BaseResponseBody, Base, TimeStampedMixin
 
 if TYPE_CHECKING:
     from src.v1.plans.models import Plan

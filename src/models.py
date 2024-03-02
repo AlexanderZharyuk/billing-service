@@ -1,7 +1,7 @@
 import logging
 from datetime import datetime
 from enum import Enum
-from typing import List
+from typing import List, Optional
 from uuid import UUID
 
 from pydantic import BaseModel
@@ -31,6 +31,7 @@ class User(SQLModel):
     full_name: str
     is_superuser: bool
     roles: List[str]
+    phone: Optional[str] = Field(default=None)
 
 
 class CurrencyEnum(str, Enum):
