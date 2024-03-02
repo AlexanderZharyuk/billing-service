@@ -1,6 +1,6 @@
 FROM python:3.10-alpine
 
-WORKDIR /opt/matching-worker/
+WORKDIR /opt/matching_penging_payments/
 COPY ./ ./
 
 RUN python3 setup.py sdist bdist_wheel

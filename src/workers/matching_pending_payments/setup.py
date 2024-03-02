@@ -7,13 +7,13 @@ def get_requirements() -> list[str]:
 
 
 setup(
-    name="matching-worker",
+    name="matching-pending-worker",
     version="1.0.0",
-    long_description="Successful Payment Matching worker",
+    long_description="Penging Payment Matching worker",
     long_description_content_type="text/markdown",
-    package_dir={"src/workers/matching_payments": ""},
+    package_dir={"src/workers/matching_pending_payments": ""},
     python_requires=">=3.10",
     install_requires=get_requirements(),
     include_package_data=True,
-    entry_points={"console_scripts": ["start-worker=src.workers.matching_payments.main"]},
+    entry_points={"console_scripts": ["start-worker=src.workers.matching_pending_payments.main"]},
 )

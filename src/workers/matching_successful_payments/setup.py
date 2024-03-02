@@ -7,7 +7,7 @@ def get_requirements() -> list[str]:
 
 
 setup(
-    name="matching-worker",
+    name="matching-successful-worker",
     version="1.0.0",
     long_description="Successful Payment Matching worker",
     long_description_content_type="text/markdown",
