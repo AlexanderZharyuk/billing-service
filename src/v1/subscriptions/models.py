@@ -15,18 +15,15 @@ if TYPE_CHECKING:
     from src.v1.payments.models import Payment
 
 
-class UserSubscriptionStatusEnum(str, Enum):
-    PAUSED = "paused"
-
-
-class SubscriptionStatusEnum(UserSubscriptionStatusEnum):
+class SubscriptionStatusEnum(Enum):
     CREATED = "created"
     ACTIVE = "active"
     EXPIRED = "expired"
     CANCELED = "cancelled"
+    PAUSED = "paused"
 
 
-class SubscriptionPauseDurationEnum(UserSubscriptionStatusEnum):
+class SubscriptionPauseDurationEnum(Enum):
     ONE_MONTH = "one_month"
     THREE_MONTHS = "three_months"
 
@@ -82,7 +79,7 @@ class SubscriptionCreate(SQLModel):
 
 
 class SubscriptionUpdate(SQLModel):
-    status: UserSubscriptionStatusEnum
+    status: SubscriptionStatusEnum
     pause_duration: SubscriptionPauseDurationEnum
 
 

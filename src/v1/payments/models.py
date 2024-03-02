@@ -9,7 +9,6 @@ from sqlmodel import SQLModel, Field, Relationship
 from src.models import BaseResponseBody, Base
 from src.models import TimeStampedMixin
 from src.v1.payment_providers.models import PaymentProvider
-from src.v1.plans import Plan
 
 if TYPE_CHECKING:
     from src.v1.subscriptions.models import Subscription
@@ -52,7 +51,7 @@ class Payment(Base, TimeStampedMixin, table=True):
     subscription: "Subscription" = Relationship(back_populates="payments")
     payment_provider_id: int = Field(foreign_key="payment_providers.id")
     payment_provider: "PaymentProvider" = Relationship(back_populates="payments")
-    payment_type: PaymentStatusEnum = Field(
+    payment_type: PaymentMethodsEnum = Field(
         default=PaymentMethodsEnum.BANK_CARD,
     )
     status: PaymentStatusEnum = Field(
@@ -70,11 +69,13 @@ class Payment(Base, TimeStampedMixin, table=True):
 
 
 class PaymentCreate(SQLModel):
-    plan: Plan
+    #plan: "Plan"
     payment_provider_id: int
     payment_method: PaymentMethodsEnum
     currency: CurrencyEnum
     amount: Decimal
+    external_payment_id: str
+    status: PaymentStatusEnum
 
 
 class PaymentUpdate(SQLModel):
