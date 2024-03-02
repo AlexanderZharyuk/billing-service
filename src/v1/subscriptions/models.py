@@ -76,12 +76,15 @@ class Subscription(Base, TimeStampedMixin, table=True):
 
 
 class SubscriptionCreate(SQLModel):
+    user_id: Optional[UUID] = Field(default=None)
+    status: SubscriptionStatusEnum
     started_at: datetime
+    ended_at: datetime #ToDo: при готовой реализации метода создания сервисом подписок данное поле должно быть вычисляемо и не будет присутствовать в модели создания
     plan_id: int
+    payment_id: int
     payment_provider_id: int
     currency: CurrencyEnum
     payment_method: PaymentMethodsEnum
-    user_id: Optional[UUID] = Field(default=None)
     return_url: Optional[str] = Field(default=None)
 
 

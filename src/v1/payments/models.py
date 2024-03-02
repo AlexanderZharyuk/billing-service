@@ -52,34 +52,36 @@ class Payment(Base, TimeStampedMixin, table=True):
         default=PaymentMethodsEnum.BANK_CARD, sa_column=Column(SQLModelEnum(PaymentMethodsEnum))
     )
     status: PaymentStatusEnum = Field(
-        default=PaymentStatusEnum.CREATED, sa_column=Column(SQLModelEnum(PaymentMethodsEnum))
+        default=PaymentStatusEnum.CREATED, sa_column=Column(SQLModelEnum(PaymentStatusEnum))
     )
     currency: CurrencyEnum = Field(
         default=CurrencyEnum.RUB,
         sa_column=Column(SQLModelEnum(CurrencyEnum)),
     )
     amount: Decimal = Field(max_digits=8, decimal_places=2)
-    external_payment_id: Optional[str] = Field(default=None, max_length=50)
+    external_payment_id: Optional[str] = Field(default=None, max_length=50, unique=True)
     external_payment_type_id: Optional[str] = Field(default=None, max_length=50)
 
     def __repr__(self) -> str:
-        return f"Payment(id={self.id!r}, status={self.status!r}, amount={self.amount!r}, currency={self.currency!r})"
+        return f"Payment(id ={self.id!r}, status={self.status!r}, amount={self.amount!r}, currency={self.currency!r})"
 
 
 class PaymentCreate(SQLModel):
     plan_id: Optional[int] = Field(default=None)
     payment_provider_id: int
     payment_method: PaymentMethodsEnum
+    status: PaymentStatusEnum
     currency: CurrencyEnum
     amount: Decimal
+    external_payment_id: str
     user_id: Optional[UUID] = Field(default=None)
     return_url: Optional[str] = Field(default=None)
 
 
 class PaymentObjectCreate(SQLModel):
     payment_provider_id: int
-    payment_method: PaymentStatusEnum
-    status: PaymentMethodsEnum
+    payment_method: PaymentMethodsEnum
+    status: PaymentStatusEnum
     currency: CurrencyEnum
     amount: Decimal = Field(max_digits=8, decimal_places=2)
     external_payment_id: str

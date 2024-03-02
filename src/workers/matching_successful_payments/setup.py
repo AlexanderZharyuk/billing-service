@@ -15,5 +15,7 @@ setup(
     python_requires=">=3.10",
     install_requires=get_requirements(),
     include_package_data=True,
-    entry_points={"console_scripts": ["start-worker=src.workers.matching_successful_payments.main"]}
+    entry_points={
+        "console_scripts": ["start-worker=src.workers.matching_successful_payments.main"]
+    },
 )
