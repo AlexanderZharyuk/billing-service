@@ -100,7 +100,6 @@ def downgrade() -> None:
     op.drop_table('payments')
     op.drop_index(op.f('subscriptions_user_id_idx'), table_name='subscriptions')
     op.drop_index(op.f('subscriptions_name_idx'), table_name='subscriptions')
-    sa.Enum('CREATED', 'ACTIVE', 'EXPIRED', 'CANCELED', 'PAUSED', name='subscriptionstatusenum').drop(op.get_bind())
     op.drop_table('planstofeatureslink')
     op.drop_index(op.f('plans_name_idx'), table_name='plans')
     op.drop_table('plans')
