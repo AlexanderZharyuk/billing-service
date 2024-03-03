@@ -163,7 +163,7 @@ class PaymentService(BasePostgresService):
         )
 
         payment_object = await super().create(payment)
-        logger.debug("Создан платеж в БД. ID %s", payment_object.id)
+        logger.debug("Создан платеж в БД. ID %s, status %s", payment_object.id, payment_object.status)
         return pp_payment.confirmation.confirmation_url, payment_object
 
     async def update(

@@ -1,6 +1,7 @@
 import datetime
 import logging
 from typing import Any, Annotated
+from uuid import UUID
 
 from fastapi import Depends
 from pydantic import BaseModel
@@ -56,8 +57,8 @@ class SubscriptionService(BasePostgresService):
         subscriptions = await super().get_all(dump_to_model=dump_to_model)
         return subscriptions
 
-    async def create(
-        self, entity: SubscriptionApiCreate, user: User = None, dump_to_model: bool = True
+    async def create_api(
+        self, entity: SubscriptionApiCreate, user: User = None
     ) -> str:
         plan = await self.plan_service.get_one_by_filter(
             filter_={"id": entity.plan_id, "is_active": True}
@@ -82,27 +83,37 @@ class SubscriptionService(BasePostgresService):
             entity=payment_create,
             user=user,
         )
+        return confirmation_url
+
+    async def create_webhook(self, external_payment_id: str | UUID, user_id: UUID, plan_id: int):
+        payment = await self.payment_service.get_one_by_filter(
+            filter_={"external_payment_id": external_payment_id}
+        )
+        if not payment:
+            raise InvalidParamsError(message="Payment not found")
 
         subscription = SubscriptionCreate(
-            user_id=user.id if user else entity.user_id,
-            status=SubscriptionStatusEnum.CREATED,
+            user_id=user_id,
+            status=SubscriptionStatusEnum.ACTIVE,
             started_at=datetime.datetime.utcnow(),
             ended_at=datetime.datetime.utcnow() + datetime.timedelta(days=31),
-            plan_id=plan.id,
+            plan_id=plan_id,
             payment_id=payment.id,
-            payment_provider_id=entity.payment_provider_id,
-            currency=entity.currency,
-            payment_method=entity.payment_method,
-            return_url=entity.return_url,
         )
-        if payment:
-            subscription_object = await super().create(subscription, dump_to_model)
-            logger.debug(
-                "Создана подписка в БД. ID подписки %s, ID платежа %s",
-                subscription_object.id,
-                payment.id,
-            )
-        return confirmation_url
+        subscription = await self.create(entity=subscription)
+        return subscription
+
+    async def create(
+        self, entity: SubscriptionCreate, dump_to_model: bool = True
+    ) -> dict | Subscription:
+        subscription = await super().create(entity)
+        logger.debug(
+            "Создана подписка в БД. ID подписки %s, ID плана %s, ID платежа %s",
+            subscription.id,
+            subscription.plan_id,
+            subscription.payment_id,
+        )
+        return subscription if dump_to_model else subscription.model_dump()
 
     async def update(
         self,

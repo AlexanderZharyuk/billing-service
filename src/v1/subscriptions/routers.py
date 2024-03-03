@@ -70,7 +70,7 @@ async def create_subscription(
 ) -> BaseResponseBody:
     if data.return_url is None:
         data.return_url = request.url_for("subscriptions")
-    redirect_url = await service.create(entity=data, user=current_user)
+    redirect_url = await service.create_api(entity=data, user=current_user)
     return BaseResponseBody(data={"redirect_url": redirect_url})
 
 

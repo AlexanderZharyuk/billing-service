@@ -76,7 +76,6 @@ class Subscription(Base, TimeStampedMixin, table=True):
 
 
 class SubscriptionApiCreate(SQLModel):
-    started_at: datetime
     plan_id: int
     payment_provider_id: int
     currency: CurrencyEnum
@@ -92,10 +91,6 @@ class SubscriptionCreate(SQLModel):
     ended_at: datetime
     plan_id: int
     payment_id: int
-    payment_provider_id: int
-    currency: CurrencyEnum
-    payment_method: PaymentMethodsEnum
-    return_url: Optional[str] = Field(default=None)
 
 
 class SubscriptionPause(SQLModel):

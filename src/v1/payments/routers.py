@@ -13,6 +13,7 @@ from src.v1.payments.models import (
     SinglePaymentResponse,
     SeveralPaymentsResponse,
 )
+from src.v1.subscriptions.service import PostgresSubscriptionService
 
 router = APIRouter(prefix="/payments", tags=["Payments"])
 logger = logging.getLogger(__name__)
@@ -26,8 +27,9 @@ logger = logging.getLogger(__name__)
     description="Получить информацию о статусе платежа.",
 )
 async def approve_payment(
-        data: dict,
-        service: PostgresPaymentService = PostgresPaymentService
+    data: dict,
+    service: PostgresPaymentService = PostgresPaymentService,
+    subscription_service: PostgresSubscriptionService = PostgresSubscriptionService,
 ) -> JSONResponse:
     """
     # payment.succeeded -> обновить статус платежа и создать подписку с активным статусом и правильными датами
@@ -59,10 +61,29 @@ async def approve_payment(
 
     """
     notification_object = WebhookNotification(data)
-    payment_update = PaymentUpdate(
-        status=notification_object.object.status
-    )
-    await service.update(external_payment_id=notification_object.object.id, data=payment_update)
+    event = notification_object.event
+
+    match event:
+        case "payment.succeeded":
+            payment_update = PaymentUpdate(status=notification_object.object.status)
+            await service.update(
+                external_payment_id=notification_object.object.id, data=payment_update
+            )
+            await subscription_service.create_webhook(
+                external_payment_id=notification_object.object.id,
+                user_id=notification_object.object.metadata["user_id"],
+                plan_id=notification_object.object.metadata["plan_id"],
+            )
+        case "payment.waiting_for_capture":
+            ...
+        case "payment.canceled":
+            payment_update = PaymentUpdate(status=notification_object.object.status)
+            await service.update(
+                external_payment_id=notification_object.object.id, data=payment_update
+            )
+        case "refund.succeeded":
+            ...
+
     return JSONResponse(status_code=200, content={"received": True})
 
 
