@@ -14,6 +14,7 @@ from src.models import BaseExceptionBody
 from src.v1.features.routers import router as features_router
 from src.v1.healthcheck.routers import router as healthcheck_router
 from src.v1.plans.routers import router as plan_router
+from src.v1.prices.routers import router as prices_router
 
 
 v1_router = APIRouter(
@@ -27,6 +28,7 @@ v1_router = APIRouter(
 v1_router.include_router(healthcheck_router)
 v1_router.include_router(features_router)
 v1_router.include_router(plan_router)
+v1_router.include_router(prices_router)
 
 
 @asynccontextmanager
