@@ -59,7 +59,7 @@ class Payment(Base, TimeStampedMixin, table=True):
         sa_column=Column(SQLModelEnum(CurrencyEnum)),
     )
     amount: Decimal = Field(max_digits=8, decimal_places=2)
-    external_payment_id: Optional[str] = Field(default=None, max_length=50, unique=True)
+    external_payment_id: Optional[str] = Field(default=None, max_length=50)
     external_payment_type_id: Optional[str] = Field(default=None, max_length=50)
 
     def __repr__(self) -> str:

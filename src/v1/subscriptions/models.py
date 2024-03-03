@@ -72,7 +72,7 @@ class Subscription(Base, TimeStampedMixin, table=True):
     )
 
     def __repr__(self) -> str:
-        return f"Subscription(id={self.id!r}, name={self.name!r}, user_id={self.user_id!r})"
+        return f"Subscription(id={self.id!r}, user_id={self.user_id!r})"
 
 
 class SubscriptionCreate(SQLModel):
@@ -94,8 +94,8 @@ class SubscriptionPause(SQLModel):
 
 
 class SubscriptionUpdate(SQLModel):
-    status: UserSubscriptionPauseEnum = Field(default=UserSubscriptionPauseEnum.PAUSED)
-    ended_at: datetime
+    status: UserSubscriptionPauseEnum | SubscriptionStatusEnum = Field(default=UserSubscriptionPauseEnum.PAUSED)
+    ended_at: Optional[datetime] = Field(default=None)
 
 
 class SubscriptionCancel(SQLModel):
