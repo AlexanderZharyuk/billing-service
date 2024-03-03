@@ -7,7 +7,6 @@ from sqlmodel import CheckConstraint
 from sqlmodel import SQLModel, Field, Relationship, Column, Enum as SQLModelEnum
 
 from src.models import BaseResponseBody, Base, TimeStampedMixin, CurrencyEnum
-from src.v1.payment_providers.models import PaymentProvider
 
 if TYPE_CHECKING:
     from src.v1.subscriptions.models import Subscription
@@ -64,6 +63,16 @@ class Payment(Base, TimeStampedMixin, table=True):
 
     def __repr__(self) -> str:
         return f"Payment(id ={self.id!r}, status={self.status!r}, amount={self.amount!r}, currency={self.currency!r})"
+
+
+class PaymentApiCreate(SQLModel):
+    plan_id: Optional[int] = Field(default=None)
+    payment_provider_id: int
+    payment_method: PaymentMethodsEnum
+    currency: CurrencyEnum
+    amount: Decimal
+    user_id: Optional[UUID] = Field(default=None)
+    return_url: Optional[str] = Field(default=None)
 
 
 class PaymentCreate(SQLModel):

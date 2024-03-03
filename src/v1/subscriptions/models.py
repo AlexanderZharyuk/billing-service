@@ -19,7 +19,7 @@ class UserSubscriptionPauseEnum(str, Enum):
 
 
 class UserSubscriptionCancelEnum(str, Enum):
-    CANCELED = "canceled"
+    CANCELED = "cancelled"
 
 
 class SubscriptionStatusEnum(str, Enum):
@@ -75,11 +75,21 @@ class Subscription(Base, TimeStampedMixin, table=True):
         return f"Subscription(id={self.id!r}, name={self.name!r}, user_id={self.user_id!r})"
 
 
+class SubscriptionApiCreate(SQLModel):
+    started_at: datetime
+    plan_id: int
+    payment_provider_id: int
+    currency: CurrencyEnum
+    payment_method: PaymentMethodsEnum
+    user_id: Optional[UUID] = Field(default=None)
+    return_url: Optional[str] = Field(default=None)
+
+
 class SubscriptionCreate(SQLModel):
     user_id: Optional[UUID] = Field(default=None)
     status: SubscriptionStatusEnum
     started_at: datetime
-    ended_at: datetime #ToDo: при готовой реализации метода создания сервисом подписок данное поле должно быть вычисляемо и не будет присутствовать в модели создания
+    ended_at: datetime
     plan_id: int
     payment_id: int
     payment_provider_id: int

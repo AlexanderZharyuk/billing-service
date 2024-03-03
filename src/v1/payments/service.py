@@ -1,3 +1,4 @@
+import logging
 from typing import Any, Annotated
 
 from fastapi import Depends
@@ -28,6 +29,8 @@ from src.v1.payments.models import (
 )
 from src.v1.plans import Plan
 from src.v1.plans.service import PostgresPlanService
+
+logger = logging.getLogger(__name__)
 
 
 class PaymentService(BasePostgresService):
@@ -80,7 +83,7 @@ class PaymentService(BasePostgresService):
             else {
                 "user_id": str(entity.user_id),
                 "phone": "79990000000",
-                "email": "test@email.com",
+                "email": "fake@email.com",
             }
         )
         receipt.customer = {**customer}
@@ -91,7 +94,7 @@ class PaymentService(BasePostgresService):
                     "name": plan.name,
                     "description": plan.description,
                     "quantity": 1,
-                    "amount": {"value": entity.amount, "currency": entity.currency},
+                    "amount": {"value": entity.amount, "currency": entity.currency.value},
                     "vat_code": 1,
                     "tax_system_id": 1,
                 }
@@ -99,24 +102,30 @@ class PaymentService(BasePostgresService):
         ]
 
         builder = PaymentRequestBuilder()
-        builder.set_amount({"value": entity.amount, "currency": entity.currency}).set_confirmation(
+        builder.set_amount(
+            {"value": entity.amount, "currency": entity.currency.value}
+        ).set_confirmation(
             {
                 "type": ConfirmationType.REDIRECT,
                 "return_url": entity.return_url if entity.return_url else "",
             }
-        ).set_capture(True).set_metadata(metadata.model_dump()).set_receipt(receipt)
+        ).set_capture(
+            True
+        ).set_metadata(
+            metadata.model_dump()
+        ).set_receipt(
+            receipt
+        )
 
         if plan.is_recurring:
             builder.set_payment_method_data(
-                {"type": entity.payment_method}
+                {"type": entity.payment_method.value}
             ).set_save_payment_method(True)
-
-        b = builder.build()
-        return b
+        return builder.build()
 
     async def create(
         self, entity: PaymentCreate, user: User = None, dump_to_model: bool = True
-    ) -> str:
+    ) -> tuple[Any, BaseModel]:
         pp = await self.payment_provider_service.get_one_by_filter(
             filter_={"id": entity.payment_provider_id}
         )
@@ -136,6 +145,13 @@ class PaymentService(BasePostgresService):
             type_object=PPPayment,
             params=pp_request,
         )
+        logger.debug(
+            "Создан платеж в платежном провайдере. ID %s, статус %s, ID метода %s, URL подтверждения %s",
+            pp_payment.id,
+            pp_payment.status,
+            pp_payment.payment_method.id,
+            pp_payment.confirmation.confirmation_url,
+        )
         payment = PaymentObjectCreate(
             payment_provider_id=entity.payment_provider_id,
             payment_method=entity.payment_method,
@@ -145,13 +161,19 @@ class PaymentService(BasePostgresService):
             external_payment_id=pp_payment.id,
             external_payment_type_id=pp_payment.payment_method.id,
         )
-        await super().create(payment)
-        return pp_payment.confirmation.confirmation_url
+
+        payment_object = await super().create(payment)
+        logger.debug("Создан платеж в БД. ID %s", payment_object.id)
+        return pp_payment.confirmation.confirmation_url, payment_object
 
     async def update(
-        self, entity_id: str, data: PaymentUpdate, dump_to_model: bool = True
+        self, external_payment_id: str, data: PaymentUpdate, dump_to_model: bool = True
     ) -> dict | Payment:
-        raise NotImplementedError
+        payment = await super().get_one_by_filter(
+            filter_={"external_payment_id": external_payment_id}
+        )
+        updated_payment = await super().update(payment.id, data, dump_to_model)
+        return updated_payment
 
     async def delete(self, entity_id: Any) -> None:
         raise NotImplementedError

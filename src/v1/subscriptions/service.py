@@ -1,14 +1,16 @@
 import datetime
+import logging
 from typing import Any, Annotated
 
-from pydantic import BaseModel
 from fastapi import Depends
+from pydantic import BaseModel
 
 from src.core.exceptions import EntityNotFoundError, InvalidParamsError
 from src.core.interfaces import BasePostgresService
 from src.db.postgres import DatabaseSession
 from src.models import User
-from src.v1.payments.models import PaymentCreate
+from src.v1.payments.models import PaymentApiCreate
+from src.v1.payments.service import PostgresPaymentService
 from src.v1.plans.service import PostgresPlanService
 from src.v1.subscriptions.models import (
     Subscription,
@@ -16,8 +18,11 @@ from src.v1.subscriptions.models import (
     SubscriptionCreate,
     SubscriptionUpdate,
     SubscriptionCancel,
+    SubscriptionApiCreate,
+    SubscriptionStatusEnum,
 )
-from src.v1.payments.service import PostgresPaymentService
+
+logger = logging.getLogger(__name__)
 
 
 class SubscriptionService(BasePostgresService):
@@ -52,7 +57,7 @@ class SubscriptionService(BasePostgresService):
         return subscriptions
 
     async def create(
-        self, entity: SubscriptionCreate, user: User = None, dump_to_model: bool = True
+        self, entity: SubscriptionApiCreate, user: User = None, dump_to_model: bool = True
     ) -> str:
         plan = await self.plan_service.get_one_by_filter(
             filter_={"id": entity.plan_id, "is_active": True}
@@ -64,7 +69,7 @@ class SubscriptionService(BasePostgresService):
         if not amount or len(amount) > 1:
             raise InvalidParamsError(message="Price not found")
 
-        payment_create = PaymentCreate(
+        payment_create = PaymentApiCreate(
             plan_id=plan.id,
             payment_provider_id=entity.payment_provider_id,
             payment_method=entity.payment_method,
@@ -73,10 +78,30 @@ class SubscriptionService(BasePostgresService):
             user_id=user.id if user else entity.user_id,
             return_url=entity.return_url,
         )
-        confirmation_url = await self.payment_service.create(
+        confirmation_url, payment = await self.payment_service.create(
             entity=payment_create,
             user=user,
         )
+
+        subscription = SubscriptionCreate(
+            user_id=user.id if user else entity.user_id,
+            status=SubscriptionStatusEnum.CREATED,
+            started_at=datetime.datetime.utcnow(),
+            ended_at=datetime.datetime.utcnow() + datetime.timedelta(days=31),
+            plan_id=plan.id,
+            payment_id=payment.id,
+            payment_provider_id=entity.payment_provider_id,
+            currency=entity.currency,
+            payment_method=entity.payment_method,
+            return_url=entity.return_url,
+        )
+        if payment:
+            subscription_object = await super().create(subscription, dump_to_model)
+            logger.debug(
+                "Создана подписка в БД. ID подписки %s, ID платежа %s",
+                subscription_object.id,
+                payment.id,
+            )
         return confirmation_url
 
     async def update(
@@ -94,11 +119,18 @@ class SubscriptionService(BasePostgresService):
                 raise EntityNotFoundError(message="Subscription not found")
 
         subscription = await self.get(entity_id, dump_to_model)
+        new_ended_at = subscription.ended_at + datetime.timedelta(days=data.pause_duration_days)
         update_data = SubscriptionUpdate(
             status=data.status,
-            ended_at=subscription.ended_at + datetime.timedelta(days=data.pause_duration_days),
+            ended_at=new_ended_at,
         )
         updated_subscription = await super().update(entity_id, update_data, dump_to_model)
+        logger.debug(
+            "Изменена подписка в БД. ID подписки %s, статус %s, дата окончания %s",
+            subscription.id,
+            data.status,
+            new_ended_at,
+        )
         return updated_subscription
 
     async def delete(
@@ -114,6 +146,7 @@ class SubscriptionService(BasePostgresService):
                 raise EntityNotFoundError(message="Subscription not found")
 
         canceled_subscription = await super().update(entity_id, SubscriptionCancel())
+        logger.debug("Отменена подписка в БД. ID подписки %s", canceled_subscription.id)
         return canceled_subscription
 
 
