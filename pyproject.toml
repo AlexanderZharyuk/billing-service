@@ -18,3 +18,9 @@ include = '\.pyi?$'
 
 [tool.flake8]
 max-line-length = 99
+
+[tool.pytest.ini_options]
+filterwarnings = [
+    "ignore::UserWarning",
+     "ignore::DeprecationWarning",
+]
