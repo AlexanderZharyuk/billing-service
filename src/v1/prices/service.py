@@ -6,18 +6,18 @@ from fastapi import Depends
 from src.core.exceptions import EntityNotFoundError
 from src.core.interfaces import BasePostgresService
 from src.db.postgres import DatabaseSession
-from src.v1.plans.models import Plan, PlanUpdate
+from src.v1.prices.models import Price, PriceUpdate
 
 
-class PlanService(BasePostgresService):
+class PriceService(BasePostgresService):
 
     def __init__(self, session: DatabaseSession):
-        self._model = Plan
+        self._model = Price
         self._session = session
 
     async def get(self, entity_id: Any, dump_to_model: bool = True) -> dict | BaseModel:
-        plan = await super().get(entity_id, dump_to_model)
-        return plan
+        price = await super().get(entity_id, dump_to_model)
+        return price
 
     async def get_one_by_filter(
         self,
@@ -25,38 +25,38 @@ class PlanService(BasePostgresService):
         dump_to_model: bool = True
     ) -> dict | BaseModel:
         try:
-            plan = await super().get_one_by_filter(filter_, dump_to_model)
+            price = await super().get_one_by_filter(filter_, dump_to_model)
         except EntityNotFoundError:
             return None if dump_to_model else {}
-        return plan
+        return price
 
     async def get_all(
         self,
         filter_: dict | None = None,
         dump_to_model: bool = True
-    ) -> list[dict] | list[Plan]:
-        plans = await super().get_all(filter_, dump_to_model)
-        return plans
+    ) -> list[dict] | list[Price]:
+        prices = await super().get_all(dump_to_model=dump_to_model)
+        return prices
 
-    async def create(self, entity: Plan, dump_to_model: bool = True) -> dict | Plan:
-        plan = await super().create(entity)
-        return plan if dump_to_model else plan.model_dump()
+    async def create(self, entity: Price, dump_to_model: bool = True) -> dict | Price:
+        price = await super().create(entity)
+        return price if dump_to_model else price.model_dump()
 
     async def update(
         self,
         entity_id: str,
-        data: PlanUpdate,
+        data: PriceUpdate,
         dump_to_model: bool = True
-    ) -> dict | Plan:
-        updated_plan = await super().update(entity_id, data, dump_to_model)
-        return updated_plan
+    ) -> dict | Price:
+        updated_price = await super().update(entity_id, data, dump_to_model)
+        return updated_price
 
     async def delete(self, entity_id: Any) -> None:
         await super().delete(entity_id)
 
 
-def get_plan_service(session: DatabaseSession) -> PlanService:
-    return PlanService(session)
+def get_price_service(session: DatabaseSession) -> PriceService:
+    return PriceService(session)
 
 
-PostgresPlanService = Annotated[PlanService, Depends(get_plan_service)]
+PostgresPriceService = Annotated[PriceService, Depends(get_price_service)]
