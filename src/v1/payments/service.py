@@ -1,20 +1,17 @@
+import logging
 from typing import Any, Annotated
 
 from fastapi import Depends
 from pydantic import BaseModel
 from yookassa import Payment as PPPayment
-from yookassa.domain.common.confirmation_type import ConfirmationType
-from yookassa.domain.models.receipt import Receipt, ReceiptItem
-from yookassa.domain.request import PaymentRequest
-from yookassa.domain.request.payment_request_builder import PaymentRequestBuilder
 
 from src.core.exceptions import EntityNotFoundError
 from src.core.interfaces import (
     BasePostgresService,
     get_provider_from_user_choice,
 )
-from src.db.postgres import DatabaseSession
 from src.core.interfaces import TypeProvider
+from src.db.postgres import DatabaseSession
 from src.models import User
 from src.v1.payment_providers.service import (
     PostgresPaymentProviderService,
@@ -23,11 +20,11 @@ from src.v1.payments.models import (
     Payment,
     PaymentUpdate,
     PaymentCreate,
-    PaymentMetadata,
     PaymentObjectCreate,
 )
-from src.v1.plans import Plan
 from src.v1.plans.service import PostgresPlanService
+
+logger = logging.getLogger(__name__)
 
 
 class PaymentService(BasePostgresService):
@@ -61,62 +58,9 @@ class PaymentService(BasePostgresService):
         payments = await super().get_all(dump_to_model=dump_to_model)
         return payments
 
-    @staticmethod
-    def create_payment_request(
-        entity: PaymentCreate,
-        plan: Plan,
-        user: User = None,
-    ) -> PaymentRequest:
-        metadata = PaymentMetadata(
-            plan_id=plan.id,
-            user_id=str(user.id if user else entity.user_id),
-            payment_provider_id=entity.payment_provider_id,
-        )
-
-        receipt = Receipt()
-        customer = (
-            user.model_dump(exclude={"id", "is_superuser", "roles"})
-            if user
-            else {
-                "user_id": str(entity.user_id),
-                "phone": "79990000000",
-                "email": "test@email.com",
-            }
-        )
-        receipt.customer = {**customer}
-        receipt.tax_system_code = 1
-        receipt.items = [
-            ReceiptItem(
-                {
-                    "name": plan.name,
-                    "description": plan.description,
-                    "quantity": 1,
-                    "amount": {"value": entity.amount, "currency": entity.currency},
-                    "vat_code": 1,
-                    "tax_system_id": 1,
-                }
-            )
-        ]
-
-        builder = PaymentRequestBuilder()
-        builder.set_amount({"value": entity.amount, "currency": entity.currency}).set_confirmation(
-            {
-                "type": ConfirmationType.REDIRECT,
-                "return_url": entity.return_url if entity.return_url else "",
-            }
-        ).set_capture(True).set_metadata(metadata.model_dump()).set_receipt(receipt)
-
-        if plan.is_recurring:
-            builder.set_payment_method_data(
-                {"type": entity.payment_method}
-            ).set_save_payment_method(True)
-
-        b = builder.build()
-        return b
-
     async def create(
         self, entity: PaymentCreate, user: User = None, dump_to_model: bool = True
-    ) -> str:
+    ) -> tuple[Any, BaseModel]:
         pp = await self.payment_provider_service.get_one_by_filter(
             filter_={"id": entity.payment_provider_id}
         )
@@ -131,10 +75,17 @@ class PaymentService(BasePostgresService):
             raise EntityNotFoundError(message="Payment provider worker not found")
 
         pp_worker = get_provider_from_user_choice(pp_worker_enum)
-        pp_request = self.create_payment_request(entity=entity, plan=plan, user=user)
         pp_payment = await pp_worker.create(
             type_object=PPPayment,
-            params=pp_request,
+            params=pp_worker.create_payment_request(entity=entity, plan=plan, user=user),
+        )
+
+        logger.debug(
+            "Создан платеж в платежном провайдере. ID %s, статус %s, ID метода %s, URL подтверждения %s",
+            pp_payment.id,
+            pp_payment.status,
+            pp_payment.payment_method.id,
+            pp_payment.confirmation.confirmation_url,
         )
         payment = PaymentObjectCreate(
             payment_provider_id=entity.payment_provider_id,
@@ -145,13 +96,19 @@ class PaymentService(BasePostgresService):
             external_payment_id=pp_payment.id,
             external_payment_type_id=pp_payment.payment_method.id,
         )
-        await super().create(payment)
-        return pp_payment.confirmation.confirmation_url
+
+        payment_object = await super().create(payment)
+        logger.debug("Создан платеж в БД. ID %s, status %s", payment_object.id, payment_object.status)
+        return pp_payment.confirmation.confirmation_url, payment_object
 
     async def update(
-        self, entity_id: str, data: PaymentUpdate, dump_to_model: bool = True
+        self, external_payment_id: str, data: PaymentUpdate, dump_to_model: bool = True
     ) -> dict | Payment:
-        raise NotImplementedError
+        payment = await super().get_one_by_filter(
+            filter_={"external_payment_id": external_payment_id}
+        )
+        updated_payment = await super().update(payment.id, data, dump_to_model)
+        return updated_payment
 
     async def delete(self, entity_id: Any) -> None:
         raise NotImplementedError

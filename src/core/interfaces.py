@@ -1,21 +1,29 @@
 import logging
 from abc import ABC, abstractmethod
 from enum import Enum
-
 from typing import Any, Union, AsyncGenerator
 
 from pydantic import BaseModel
 from requests.exceptions import HTTPError
-from yookassa import Configuration, Payment, Receipt, Refund
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.exc import MultipleResultsFound
 from sqlalchemy import select, delete
+<<<<<<< HEAD
 from yookassa.domain.request import PaymentRequest
+=======
+from sqlalchemy.exc import MultipleResultsFound
+from sqlalchemy.ext.asyncio import AsyncSession
+from yookassa import Configuration, Payment, Receipt, Refund
+from yookassa.domain.common.confirmation_type import ConfirmationType
+from yookassa.domain.request import PaymentRequest
+from yookassa.domain.request.payment_request_builder import PaymentRequestBuilder
+>>>>>>> origin/master
 from yookassa.domain.response import PaymentResponse, ReceiptResponse, RefundResponse
 
 from src.core.config import settings
 from src.core.exceptions import EntityNotFoundError, MultipleEntitiesFoundError, InvalidParamsError
 from src.core.helpers import rollback_transaction
+from src.models import User
+from src.v1.payments.models import PaymentMetadata, PaymentCreate
+from src.v1.plans import Plan
 
 
 class TypeProvider(Enum):
@@ -133,7 +141,12 @@ class BasePostgresService(AbstractService):
 
     @rollback_transaction(method="UPDATE")
     async def update(
+<<<<<<< HEAD
         self, entity_id: str, data: BaseModel, dump_to_model: bool = True, commit: bool = True
+                                                                                          == == ===
+
+    self, entity_id: str, data: BaseModel, dump_to_model: bool = True
+>>>>>>> origin/master
     ) -> dict | BaseModel:
         entity = await self.get(entity_id)
         for attribute, value in data.model_dump(exclude_none=True).items():
@@ -172,6 +185,10 @@ class AbstractProvider(ABC):
         dump_to_model: bool = True,
     ) -> Any:
         """Creates entity."""
+
+    @abstractmethod
+    async def create_payment_request(self, *args, **kwargs) -> Any:
+        """Prepare payment request."""
 
     @classmethod
     def get_provider(cls, type_provider: TypeProvider):
@@ -231,6 +248,41 @@ class BaseYookassaProvider(AbstractProvider):
             raise InvalidParamsError
         return result if dump_to_model else dict(**result)
 
+    @staticmethod
+    def create_payment_request(
+        entity: PaymentCreate,
+        plan: Plan,
+        user: User = None,
+    ) -> PaymentRequest:
+        metadata = PaymentMetadata(
+            plan_id=plan.id,
+            user_id=str(user.id if user else entity.user_id),
+            payment_provider_id=entity.payment_provider_id,
+        )
 
+<<<<<<< HEAD
+=======
+        builder = PaymentRequestBuilder()
+        builder.set_amount(
+            {"value": entity.amount, "currency": entity.currency.value}
+        ).set_confirmation(
+            {
+                "type": ConfirmationType.REDIRECT,
+                "return_url": entity.return_url if entity.return_url else "",
+            }
+        ).set_capture(
+            True
+        ).set_metadata(
+            metadata.model_dump()
+        )
+
+        if plan.is_recurring:
+            builder.set_payment_method_data(
+                {"type": entity.payment_method.value}
+            ).set_save_payment_method(True)
+        return builder.build()
+
+
+>>>>>>> origin/master
 def get_provider_from_user_choice(type_provider: TypeProvider | Enum) -> AbstractProvider:
     return AbstractProvider.get_provider(type_provider)

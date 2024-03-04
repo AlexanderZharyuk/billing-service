@@ -1,47 +1,18 @@
+import logging
 from typing import Annotated
 
 from fastapi import APIRouter, status, Depends, Path
-from fastapi.responses import Response
 
-from yookassa.domain.notification import WebhookNotification
 from src.dependencies import get_current_user, is_admin
 from src.models import User
-from src.v1.payments.service import PostgresPaymentService
 from src.v1.payments.models import (
-    PaymentCreate,
     SinglePaymentResponse,
     SeveralPaymentsResponse,
 )
+from src.v1.payments.service import PostgresPaymentService
 
 router = APIRouter(prefix="/payments", tags=["Payments"])
-
-
-# @router.post(
-#     "/webhook",
-#     summary="Подтверждение платежа.",
-#     response_model=Response,
-#     status_code=status.HTTP_200_OK,
-#     description="Подтвердить платеж.",
-# )
-# async def approve_payment(
-#         data: dict,
-#         service: PostgresPaymentService = PostgresPaymentService
-# ) -> Response:
-#     # TODO:
-#     # получить событие:
-#     # payment.succeeded -> обновить статус платежа и создать подписку с активным статусом и правильными датами
-#     # payment.waiting_for_capture -> ???
-#     # payment.canceled -> обновить статус платежа
-#     # refund.succeeded -> обновить статус подписки
-#     #
-#
-#     notification_object = WebhookNotification(data)
-#     event = notification_object.event
-#
-#     payment = notification_object.object
-#     payment = await service.update(data)
-#
-#     return Response(status_code=200)
+logger = logging.getLogger(__name__)
 
 
 @router.get(
