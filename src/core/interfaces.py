@@ -1,20 +1,18 @@
 import logging
 from abc import ABC, abstractmethod
 from enum import Enum
-
 from typing import Any, Union, AsyncGenerator
 
 from pydantic import BaseModel
 from requests.exceptions import HTTPError
-from yookassa import Configuration, Payment, Receipt, Refund
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.exc import MultipleResultsFound
 from sqlalchemy import select, delete
-from yookassa.domain.request import PaymentRequest
-from yookassa.domain.response import PaymentResponse, ReceiptResponse, RefundResponse
+from sqlalchemy.exc import MultipleResultsFound
+from sqlalchemy.ext.asyncio import AsyncSession
+from yookassa import Configuration, Payment, Receipt, Refund
 from yookassa.domain.common.confirmation_type import ConfirmationType
-from yookassa.domain.models.receipt import Receipt as YooKassaReceipt, ReceiptItem
+from yookassa.domain.request import PaymentRequest
 from yookassa.domain.request.payment_request_builder import PaymentRequestBuilder
+from yookassa.domain.response import PaymentResponse, ReceiptResponse, RefundResponse
 
 from src.core.config import settings
 from src.core.exceptions import EntityNotFoundError, MultipleEntitiesFoundError, InvalidParamsError
@@ -178,9 +176,7 @@ class AbstractProvider(ABC):
         """Creates entity."""
 
     @abstractmethod
-    async def create_payment_request(
-        self, *args, **kwargs
-    ) -> Any:
+    async def create_payment_request(self, *args, **kwargs) -> Any:
         """Prepare payment request."""
 
     @classmethod
@@ -253,31 +249,6 @@ class BaseYookassaProvider(AbstractProvider):
             payment_provider_id=entity.payment_provider_id,
         )
 
-        receipt = YooKassaReceipt()
-        customer = (
-            user.model_dump(exclude={"id", "is_superuser", "roles"})
-            if user
-            else {
-                "user_id": str(entity.user_id),
-                "phone": "79990000000",
-                "email": "fake@email.com",
-            }
-        )
-        receipt.customer = {**customer}
-        receipt.tax_system_code = 1
-        receipt.items = [
-            ReceiptItem(
-                {
-                    "name": plan.name,
-                    "description": plan.description,
-                    "quantity": 1,
-                    "amount": {"value": entity.amount, "currency": entity.currency.value},
-                    "vat_code": 1,
-                    "tax_system_id": 1,
-                }
-            )
-        ]
-
         builder = PaymentRequestBuilder()
         builder.set_amount(
             {"value": entity.amount, "currency": entity.currency.value}
@@ -290,8 +261,6 @@ class BaseYookassaProvider(AbstractProvider):
             True
         ).set_metadata(
             metadata.model_dump()
-        ).set_receipt(
-            receipt
         )
 
         if plan.is_recurring:

@@ -58,7 +58,7 @@ class SubscriptionService(BasePostgresService):
         subscriptions = await super().get_all(filter_, dump_to_model)
         return subscriptions
 
-    async def create_api(self, entity: SubscriptionApiCreate, user: User = None) -> str:
+    async def get_confirmation_url(self, entity: SubscriptionApiCreate, user: User = None) -> str:
         plan = await self.plan_service.get_one_by_filter(
             filter_={"id": entity.plan_id, "is_active": True}
         )
@@ -67,7 +67,7 @@ class SubscriptionService(BasePostgresService):
 
         amount = list(filter(lambda x: x.currency == entity.currency, plan.prices))
         if not amount or len(amount) > 1:
-            raise InvalidParamsError(message="Price not found")
+            raise InvalidParamsError(message="Price in this currency not found")
 
         payment_create = PaymentCreate(
             plan_id=plan.id,
@@ -113,10 +113,11 @@ class SubscriptionService(BasePostgresService):
 
         subscription = await super().create(entity)
         logger.debug(
-            "Создана подписка в БД. ID подписки %s, ID плана %s, ID платежа %s",
+            "Создана подписка в БД. ID подписки %s, ID плана %s, ID платежа %s, ID пользователя %s",
             subscription.id,
             subscription.plan_id,
             subscription.payment_id,
+            subscription.user_id,
         )
         return subscription if dump_to_model else subscription.model_dump()
 

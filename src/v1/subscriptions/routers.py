@@ -70,8 +70,8 @@ async def create_subscription(
 ) -> BaseResponseBody:
     if data.return_url is None:
         data.return_url = request.url_for("subscriptions")
-    redirect_url = await service.create_api(entity=data, user=current_user)
-    return BaseResponseBody(data={"redirect_url": redirect_url})
+    confirmation_url = await service.get_confirmation_url(entity=data, user=current_user)
+    return BaseResponseBody(data={"confirmation_url": confirmation_url})
 
 
 @router.patch(
