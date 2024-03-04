@@ -3,21 +3,21 @@ import pytest
 pytestmark = pytest.mark.anyio
 
 
-async def get_subscription():
+async def test_get_subscription():
     pass
 
 
-async def get_subscriptions():
+async def test_get_subscriptions():
     pass
 
 
-async def create_subscription():
+async def test_create_subscription():
     pass
 
 
-async def pause_subscription():
+async def test_pause_subscription():
     pass
 
 
-async def cancel_subscription():
+async def test_cancel_subscription():
     pass

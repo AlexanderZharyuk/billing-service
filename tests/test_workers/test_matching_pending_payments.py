@@ -2,13 +2,14 @@ import pytest
 
 pytestmark = pytest.mark.anyio
 
-async def matching_data():
+
+async def test_matching_data():
     pass
 
 
-async def fix_paid_payments():
+async def test_fix_paid_payments():
     pass
 
 
-async def fix_expired_payments():
+async def test_fix_expired_payments():
     pass

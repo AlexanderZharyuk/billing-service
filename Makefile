@@ -13,6 +13,7 @@ help:
 	@echo "  lint-apply          Apply isort/black fixes linter (autoformat)"
 	@echo "  sec                 Security linter (bandit)"
 	@echo "  run                 Start application"
+	@echo "  test                Start tests"
 
 sec:
 	@bandit -r src/
@@ -36,3 +37,6 @@ down:
 
 run:
 	@uvicorn src.main:app --reload --port ${LISTEN_PORT}
+
+test:
+    @pytest tests

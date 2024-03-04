@@ -3,5 +3,5 @@ import pytest
 pytestmark = pytest.mark.anyio
 
 
-async def matching_data():
+async def test_matching_data():
     pass
