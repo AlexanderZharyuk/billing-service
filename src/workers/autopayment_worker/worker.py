@@ -16,6 +16,7 @@ from src.v1.payments.models import Payment, PaymentCreate, PaymentStatusEnum
 from src.v1.payments.service import get_payment_service
 from src.v1.plans.models import DurationUnitEnum, Plan, Price
 from src.v1.plans.service import get_plan_service
+from src.v1.prices.service import get_price_service
 from src.v1.subscriptions.models import (Subscription, SubscriptionStatusEnum,
                                          SubscriptionUpdate)
 from src.v1.subscriptions.service import get_subscription_service
@@ -26,8 +27,9 @@ class AutopaymentsWorker(BasePostgresService):
     def __init__(self, session: AsyncSession = None, type_provider=TypeProvider.YOOKASSA):
         self._model = Payment
         self._session = session
-        self.provider = get_provider_from_user_choice(type_provider)
+        self.provider = get_provider_from_user_choice(type_provider=type_provider)
         self.plan_service = get_plan_service(session=session)
+        self.price_service = get_price_service(session=session)
         self.payment_provider_service = get_payment_provider_service(session=session)
         self.payment_service = get_payment_service(
             session=session,
@@ -49,7 +51,7 @@ class AutopaymentsWorker(BasePostgresService):
         for subscription in subscriptions:
             payment = await super().get(entity_id=subscription.payment_id)
             external_payment_id = payment.external_payment_id
-            price = await self.get_price(subscription.plan_id) ##ToDo: Replace by using the price service method
+            price = await self.price_service.get_one_by_filter(filter_={"plan_id": subscription.plan_id})
             plan = await self.plan_service.get(entity_id=subscription.plan_id)
             ended_at = await self.calculationg_end_date(plan=plan)
             external_payment = await self.create_external_payment(
@@ -72,7 +74,7 @@ class AutopaymentsWorker(BasePostgresService):
             )
             await self.update_subscription(
                 entity_id=subscription.id,
-                data=Subscription(status=SubscriptionStatusEnum.ACTIVE, ended_at=ended_at),
+                data=Subscription(status=SubscriptionStatusEnum.ACTIVE, ended_at=ended_at)
             )
             await self.session_commit()
             logger.info(f"A payment has been created with id {payment_create.id}.")
@@ -91,13 +93,8 @@ class AutopaymentsWorker(BasePostgresService):
         except AttributeError as error:
             logger.info(f"An error occurred when requesting payments from the database:{error}")
 
-    async def get_price(self, plan_id: int) -> Price: #ToDo: Replace by using the price service method this DELETE
-        self._model = Price
-        result = await super().get_one_by_filter(filter_={"plan_id": plan_id})
-        return result
-
     async def update_subscription(self, entity_id: int, data: SubscriptionUpdate) -> Subscription:
-        result = await self.subscription_service.update(entity_id=entity_id, data=data)
+        result = await self.subscription_service.update(entity_id=entity_id, data=data, commit=False)
         return result
 
     async def create_external_payment(self, payment_method_id: str, price: Price) -> PaymentResponse:
@@ -106,8 +103,8 @@ class AutopaymentsWorker(BasePostgresService):
                 type_object=self.type_object,
                 params={
                     "amount": {
-                        "value": price.amount,
-                        "currency": price.currency.value,
+                        "value": "1000",
+                        "currency": "RUB",
                     },
                     "capture": True,
                     "payment_method_id": payment_method_id,

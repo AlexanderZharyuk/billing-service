@@ -7,6 +7,7 @@ from yookassa import Payment as yoPayment
 from src.core.exceptions import InvalidParamsError
 from src.core.interfaces import (BasePostgresService, TypeProvider,
                                  get_provider_from_user_choice)
+from src.core.helpers import rollback_transaction
 from src.v1.features.models import Feature
 from src.v1.payment_providers.models import PaymentProvider
 from src.v1.payment_providers.service import get_payment_provider_service
@@ -68,7 +69,7 @@ class BasePaymentMatchingWorker(BasePostgresService):
             logger.info(f"An error occurred when requesting payments from the database:{error}")
 
     async def update_payment(self, entity_id: int, status: PaymentStatusEnum) -> Payment:
-        payment = await super().update(entity_id=entity_id, data=PaymentUpdate(status=status))
+        payment = await super().update(entity_id=entity_id, data=PaymentUpdate(status=status), commit=False)
         return payment
 
     async def create_subscription(self, metadata: PaymentMetadata, payment: Payment) -> BaseModel:
@@ -79,8 +80,13 @@ class BasePaymentMatchingWorker(BasePostgresService):
             plan_id=metadata.plan_id,
             payment_id=payment.id
         )
-        result = await self.subscriptions_service.create(entity=subscription)
+        result = await self.subscriptions_service.create(entity=subscription, commit=False)
         return result
+
+    @rollback_transaction(method="CREATE AND UPDATE")
+    async def session_commit(self) -> None:
+        await self.session.commit()
+        return
 
 #ToDo: DELETE!!!
     async def test(self):

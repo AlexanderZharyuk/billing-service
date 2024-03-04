@@ -1,4 +1,5 @@
 from enum import Enum
+from decimal import Decimal
 from typing import Optional, List, TYPE_CHECKING
 
 from sqlmodel import SQLModel, Field, Relationship, Column, Enum as SQLModelEnum
