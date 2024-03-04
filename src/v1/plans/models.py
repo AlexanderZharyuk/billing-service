@@ -1,4 +1,3 @@
-from decimal import Decimal
 from enum import Enum
 from typing import Optional, List, TYPE_CHECKING
 
@@ -7,10 +6,12 @@ from src.models import BaseResponseBody, Base
 from src.models import TimeStampedMixin
 from src.models import CurrencyEnum
 
+
 from src.v1.subscriptions.models import Subscription
 
 if TYPE_CHECKING:
     from src.v1.features.models import Feature
+    from src.v1.prices.models import Price
 
 
 class DurationUnitEnum(str, Enum):
@@ -45,7 +46,7 @@ class Price(Base, table=True):
         schema_extra={"examples": [1000.00]},
     )
 
-
+      
 class Plan(Base, TimeStampedMixin, table=True):
     """Модель таблицы с планами."""
 
