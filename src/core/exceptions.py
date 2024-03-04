@@ -54,7 +54,7 @@ class InvalidParamsError(HTTPException):
     def __init__(
         self,
         status_code: int = HTTPStatus.BAD_REQUEST,
-        message: str = "Invalid params for create entity.",
+        message: str = "Invalid params.",
     ) -> None:
         detail = {"code": BaseExceptionCodes.INVALID_PARAMS, "message": message}
         super().__init__(status_code=status_code, detail=detail)
