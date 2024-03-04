@@ -10,7 +10,7 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 from src.v1.features.exceptions import FeatureNotFoundError
 from src.v1.features.models import Feature
 from src.v1.features.models import FeatureCreate, FeatureUpdate
-from src.v1.helpers import catch_sa_errors
+from src.helpers import catch_sa_errors
 from src.v1.services import BaseService
 
 logger = logging.getLogger(__name__)

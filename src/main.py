@@ -15,6 +15,9 @@ from src.v1.features.routers import router as features_router
 from src.v1.healthcheck.routers import router as healthcheck_router
 from src.v1.plans.routers import router as plan_router
 from src.v1.admin import router as admin_router
+from src.v1.subscriptions.routers import router as subscription_router
+from src.v1.payments.routers import router as payment_router
+from src.v1.webhooks.routers import router as webhooks_router
 
 
 v1_router = APIRouter(
@@ -28,6 +31,9 @@ v1_router = APIRouter(
 v1_router.include_router(healthcheck_router)
 v1_router.include_router(features_router)
 v1_router.include_router(plan_router)
+v1_router.include_router(subscription_router)
+v1_router.include_router(payment_router)
+v1_router.include_router(webhooks_router)
 v1_router.include_router(admin_router)
 
 
