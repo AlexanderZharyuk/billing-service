@@ -14,6 +14,7 @@ if TYPE_CHECKING:
 
 
 class DurationUnitEnum(str, Enum):
+    DAY = "day"
     MONTH = "month"
     YEAR = "year"
 

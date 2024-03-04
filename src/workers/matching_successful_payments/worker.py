@@ -28,7 +28,7 @@ class MatchingSuccessPayments(BasePaymentMatchingWorker):
         payments_for_provider = await super().get_payments_for_provider(params=params)
         payments_for_db = await super().get_payments_for_db(filter_=filter_)
         different_items = set(payments_for_provider).difference(set(payments_for_db))
-        if len(different_items) == 0:
+        if not different_items == 0:
             logger.info("No discrepancies in payments were found.")
             return
         for item in different_items:

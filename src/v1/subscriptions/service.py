@@ -46,9 +46,9 @@ class SubscriptionService(BasePostgresService):
         return subscription
 
     async def get_all(
-        self, filter_: dict | None = None, dump_to_model: bool = True
+        self, filter_: dict | tuple | None = None, dump_to_model: bool = True
     ) -> list[dict] | list[Subscription]:
-        subscriptions = await super().get_all(dump_to_model=dump_to_model)
+        subscriptions = await super().get_all(filter_=filter_, dump_to_model=dump_to_model)
         return subscriptions
 
     async def create(

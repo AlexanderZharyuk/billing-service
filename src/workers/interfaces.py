@@ -52,7 +52,7 @@ class BasePaymentMatchingWorker(BasePostgresService):
         payment = await super().update(entity_id=entity_id, data=PaymentUpdate(status=status))
         return payment
 
-    async def create_subscription(self, metadata: PaymentMetadata, payment: Payment) -> BaseModel:
+    async def create_subscription(self, metadata: PaymentMetadata, payment: Payment) -> BaseModel: #ToDo: Replace by using the subscription service method
         self._model = Subscription
         subscription = SubscriptionCreate(
             user_id=metadata.user_id,
