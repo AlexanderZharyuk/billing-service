@@ -12,10 +12,16 @@ from sqlalchemy.exc import MultipleResultsFound
 from sqlalchemy import select, delete
 from yookassa.domain.request import PaymentRequest
 from yookassa.domain.response import PaymentResponse, ReceiptResponse, RefundResponse
+from yookassa.domain.common.confirmation_type import ConfirmationType
+from yookassa.domain.models.receipt import Receipt as YooKassaReceipt, ReceiptItem
+from yookassa.domain.request.payment_request_builder import PaymentRequestBuilder
 
 from src.core.config import settings
 from src.core.exceptions import EntityNotFoundError, MultipleEntitiesFoundError, InvalidParamsError
 from src.core.helpers import rollback_transaction
+from src.models import User
+from src.v1.payments.models import PaymentMetadata, PaymentCreate
+from src.v1.plans import Plan
 
 
 class TypeProvider(Enum):
@@ -171,6 +177,12 @@ class AbstractProvider(ABC):
     ) -> Any:
         """Creates entity."""
 
+    @abstractmethod
+    async def create_payment_request(
+        self, *args, **kwargs
+    ) -> Any:
+        """Prepare payment request."""
+
     @classmethod
     def get_provider(cls, type_provider: TypeProvider):
         match type_provider:
@@ -228,6 +240,65 @@ class BaseYookassaProvider(AbstractProvider):
             logging.exception(error)
             raise InvalidParamsError
         return result if dump_to_model else dict(**result)
+
+    @staticmethod
+    def create_payment_request(
+        entity: PaymentCreate,
+        plan: Plan,
+        user: User = None,
+    ) -> PaymentRequest:
+        metadata = PaymentMetadata(
+            plan_id=plan.id,
+            user_id=str(user.id if user else entity.user_id),
+            payment_provider_id=entity.payment_provider_id,
+        )
+
+        receipt = YooKassaReceipt()
+        customer = (
+            user.model_dump(exclude={"id", "is_superuser", "roles"})
+            if user
+            else {
+                "user_id": str(entity.user_id),
+                "phone": "79990000000",
+                "email": "fake@email.com",
+            }
+        )
+        receipt.customer = {**customer}
+        receipt.tax_system_code = 1
+        receipt.items = [
+            ReceiptItem(
+                {
+                    "name": plan.name,
+                    "description": plan.description,
+                    "quantity": 1,
+                    "amount": {"value": entity.amount, "currency": entity.currency.value},
+                    "vat_code": 1,
+                    "tax_system_id": 1,
+                }
+            )
+        ]
+
+        builder = PaymentRequestBuilder()
+        builder.set_amount(
+            {"value": entity.amount, "currency": entity.currency.value}
+        ).set_confirmation(
+            {
+                "type": ConfirmationType.REDIRECT,
+                "return_url": entity.return_url if entity.return_url else "",
+            }
+        ).set_capture(
+            True
+        ).set_metadata(
+            metadata.model_dump()
+        ).set_receipt(
+            receipt
+        )
+
+        if plan.is_recurring:
+            builder.set_payment_method_data(
+                {"type": entity.payment_method.value}
+            ).set_save_payment_method(True)
+        return builder.build()
 
 
 def get_provider_from_user_choice(type_provider: TypeProvider | Enum) -> AbstractProvider:

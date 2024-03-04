@@ -39,8 +39,8 @@ class PaymentProviderService(BasePostgresService):
         return payment_providers
 
     async def create(self, entity: PaymentProvider, dump_to_model: bool = True) -> dict | PaymentProvider:
-        payment_provider = await super().create(entity)
-        return payment_provider if dump_to_model else payment_provider.model_dump()
+        payment_provider = await super().create(entity, dump_to_model)
+        return payment_provider
 
     async def update(
         self,

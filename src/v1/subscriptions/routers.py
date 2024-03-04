@@ -87,7 +87,7 @@ async def pause_subscription(
     service: PostgresSubscriptionService = PostgresSubscriptionService,
     current_user: User = Depends(get_current_user),
 ) -> SingleSubscriptionResponse:
-    subscription = await service.update(
+    subscription = await service.pause(
         entity_id=subscription_id,
         data=data,
         user=current_user if not is_admin(current_user) else None,

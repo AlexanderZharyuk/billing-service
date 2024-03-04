@@ -87,8 +87,8 @@ class SubscriptionApiCreate(SQLModel):
 class SubscriptionCreate(SQLModel):
     user_id: Optional[UUID] = Field(default=None)
     status: SubscriptionStatusEnum
-    started_at: datetime
-    ended_at: datetime
+    started_at: Optional[datetime] = Field(default_factory=datetime.utcnow)
+    ended_at: Optional[datetime] = Field(default=None)
     plan_id: int
     payment_id: int
 
@@ -99,8 +99,8 @@ class SubscriptionPause(SQLModel):
 
 
 class SubscriptionUpdate(SQLModel):
-    status: UserSubscriptionPauseEnum = Field(default=UserSubscriptionPauseEnum.PAUSED)
-    ended_at: datetime
+    status: SubscriptionStatusEnum = Field(default=SubscriptionStatusEnum.PAUSED)
+    ended_at: Optional[datetime] = Field(default=None)
 
 
 class SubscriptionCancel(SQLModel):

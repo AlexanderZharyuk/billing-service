@@ -10,9 +10,10 @@ from src.core.exceptions import EntityNotFoundError, InvalidParamsError
 from src.core.interfaces import BasePostgresService
 from src.db.postgres import DatabaseSession
 from src.models import User
-from src.v1.payments.models import PaymentApiCreate
+from src.v1.payments.models import PaymentCreate
 from src.v1.payments.service import PostgresPaymentService
 from src.v1.plans.service import PostgresPlanService
+from src.v1.plans.models import DurationUnitEnum
 from src.v1.subscriptions.models import (
     Subscription,
     SubscriptionPause,
@@ -52,14 +53,12 @@ class SubscriptionService(BasePostgresService):
         return subscription
 
     async def get_all(
-        self, filter_: dict | None = None, dump_to_model: bool = True
+        self, filter_: dict | tuple | None = None, dump_to_model: bool = True
     ) -> list[dict] | list[Subscription]:
-        subscriptions = await super().get_all(dump_to_model=dump_to_model)
+        subscriptions = await super().get_all(filter_, dump_to_model)
         return subscriptions
 
-    async def create_api(
-        self, entity: SubscriptionApiCreate, user: User = None
-    ) -> str:
+    async def create_api(self, entity: SubscriptionApiCreate, user: User = None) -> str:
         plan = await self.plan_service.get_one_by_filter(
             filter_={"id": entity.plan_id, "is_active": True}
         )
@@ -70,7 +69,7 @@ class SubscriptionService(BasePostgresService):
         if not amount or len(amount) > 1:
             raise InvalidParamsError(message="Price not found")
 
-        payment_create = PaymentApiCreate(
+        payment_create = PaymentCreate(
             plan_id=plan.id,
             payment_provider_id=entity.payment_provider_id,
             payment_method=entity.payment_method,
@@ -85,7 +84,7 @@ class SubscriptionService(BasePostgresService):
         )
         return confirmation_url
 
-    async def create_webhook(self, external_payment_id: str | UUID, user_id: UUID, plan_id: int):
+    async def create_by_webhook(self, external_payment_id: str | UUID, user_id: UUID, plan_id: int):
         payment = await self.payment_service.get_one_by_filter(
             filter_={"external_payment_id": external_payment_id}
         )
@@ -95,8 +94,6 @@ class SubscriptionService(BasePostgresService):
         subscription = SubscriptionCreate(
             user_id=user_id,
             status=SubscriptionStatusEnum.ACTIVE,
-            started_at=datetime.datetime.utcnow(),
-            ended_at=datetime.datetime.utcnow() + datetime.timedelta(days=31),
             plan_id=plan_id,
             payment_id=payment.id,
         )
@@ -106,6 +103,14 @@ class SubscriptionService(BasePostgresService):
     async def create(
         self, entity: SubscriptionCreate, dump_to_model: bool = True
     ) -> dict | Subscription:
+        plan = await self.plan_service.get_one_by_filter(
+            filter_={"id": int(entity.plan_id), "is_active": True}
+        )
+        if not plan:
+            raise InvalidParamsError(message="Plan not found")
+        duration_days = 31 if plan.duration_unit == DurationUnitEnum.MONTH.value else 365
+        entity.ended_at = entity.started_at + datetime.timedelta(days=duration_days)
+
         subscription = await super().create(entity)
         logger.debug(
             "Создана подписка в БД. ID подписки %s, ID плана %s, ID платежа %s",
@@ -115,7 +120,7 @@ class SubscriptionService(BasePostgresService):
         )
         return subscription if dump_to_model else subscription.model_dump()
 
-    async def update(
+    async def pause(
         self,
         entity_id: str,
         data: SubscriptionPause,
@@ -135,12 +140,20 @@ class SubscriptionService(BasePostgresService):
             status=data.status,
             ended_at=new_ended_at,
         )
-        updated_subscription = await super().update(entity_id, update_data, dump_to_model)
+        return await self.update(entity_id, update_data, dump_to_model)
+
+    async def update(
+        self,
+        entity_id: str,
+        data: SubscriptionUpdate,
+        dump_to_model: bool = True,
+    ) -> dict | Subscription:
+        updated_subscription = await super().update(entity_id, data, dump_to_model)
         logger.debug(
             "Изменена подписка в БД. ID подписки %s, статус %s, дата окончания %s",
-            subscription.id,
-            data.status,
-            new_ended_at,
+            updated_subscription.id,
+            updated_subscription.status,
+            updated_subscription.ended_at,
         )
         return updated_subscription
 

@@ -65,28 +65,6 @@ class Payment(Base, TimeStampedMixin, table=True):
         return f"Payment(id ={self.id!r}, status={self.status!r}, amount={self.amount!r}, currency={self.currency!r})"
 
 
-class PaymentApiCreate(SQLModel):
-    plan_id: Optional[int] = Field(default=None)
-    payment_provider_id: int
-    payment_method: PaymentMethodsEnum
-    currency: CurrencyEnum
-    amount: Decimal
-    user_id: Optional[UUID] = Field(default=None)
-    return_url: Optional[str] = Field(default=None)
-
-
-class PaymentCreate(SQLModel):
-    plan_id: Optional[int] = Field(default=None)
-    payment_provider_id: int
-    payment_method: PaymentMethodsEnum
-    status: PaymentStatusEnum
-    currency: CurrencyEnum
-    amount: Decimal
-    external_payment_id: str
-    user_id: Optional[UUID] = Field(default=None)
-    return_url: Optional[str] = Field(default=None)
-
-
 class PaymentObjectCreate(SQLModel):
     payment_provider_id: int
     payment_method: PaymentMethodsEnum
@@ -95,6 +73,15 @@ class PaymentObjectCreate(SQLModel):
     amount: Decimal = Field(max_digits=8, decimal_places=2)
     external_payment_id: str
     external_payment_type_id: str
+
+
+class PaymentCreate(PaymentObjectCreate):
+    plan_id: Optional[int] = Field(default=None)
+    status: Optional[PaymentStatusEnum] = Field(default=PaymentStatusEnum.CREATED)
+    external_payment_id: Optional[str] = Field(default=None)
+    external_payment_type_id: Optional[str] = Field(default=None)
+    user_id: Optional[UUID] = Field(default=None)
+    return_url: Optional[str] = Field(default=None)
 
 
 class PaymentUpdate(SQLModel):
