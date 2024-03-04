@@ -4,12 +4,9 @@ from typing import Optional, TYPE_CHECKING
 from uuid import UUID
 
 from sqlmodel import CheckConstraint
-from sqlmodel import SQLModel, Field, Relationship
+from sqlmodel import SQLModel, Field, Relationship, Column, Enum as SQLModelEnum
 
-from src.models import BaseResponseBody, Base
-from src.models import TimeStampedMixin
-from src.v1.payment_providers.models import PaymentProvider
-from src.v1.plans import Plan
+from src.models import BaseResponseBody, Base, TimeStampedMixin, CurrencyEnum
 
 if TYPE_CHECKING:
     from src.v1.subscriptions.models import Subscription
@@ -22,12 +19,7 @@ class PaymentStatusEnum(str, Enum):
     SUCCEEDED = "succeeded"
     EXPIRED = "expired"
     CANCELED = "cancelled"
-
-
-class CurrencyEnum(str, Enum):
-    RUB = "RUB"
-    USD = "USD"
-    EUR = "EUR"
+    REFUNDED = "refunded"
 
 
 class PaymentMethodsEnum(str, Enum):
@@ -44,6 +36,9 @@ class Payment(Base, TimeStampedMixin, table=True):
     __tablename__ = "payments"
     __table_args__ = (CheckConstraint("amount > 0", name="amount_positive_integer"),)
 
+    class Config:
+        arbitrary_types_allowed = True
+
     id: Optional[int] = Field(
         default=None,
         primary_key=True,
@@ -52,29 +47,41 @@ class Payment(Base, TimeStampedMixin, table=True):
     subscription: "Subscription" = Relationship(back_populates="payments")
     payment_provider_id: int = Field(foreign_key="payment_providers.id")
     payment_provider: "PaymentProvider" = Relationship(back_populates="payments")
-    payment_type: PaymentStatusEnum = Field(
-        default=PaymentMethodsEnum.BANK_CARD,
+    payment_method: PaymentMethodsEnum = Field(
+        default=PaymentMethodsEnum.BANK_CARD, sa_column=Column(SQLModelEnum(PaymentMethodsEnum))
     )
     status: PaymentStatusEnum = Field(
-        default=PaymentStatusEnum.CREATED,
+        default=PaymentStatusEnum.CREATED, sa_column=Column(SQLModelEnum(PaymentStatusEnum))
     )
     currency: CurrencyEnum = Field(
         default=CurrencyEnum.RUB,
+        sa_column=Column(SQLModelEnum(CurrencyEnum)),
     )
     amount: Decimal = Field(max_digits=8, decimal_places=2)
-    external_payment_id: Optional[str] = Field(default=None, max_length=50)
+    external_payment_id: Optional[str] = Field(default=None, max_length=50, unique=True)
     external_payment_type_id: Optional[str] = Field(default=None, max_length=50)
 
     def __repr__(self) -> str:
-        return f"Payment(id={self.id!r}, status={self.status!r}, amount={self.amount!r}, currency={self.currency!r})"
+        return f"Payment(id ={self.id!r}, status={self.status!r}, amount={self.amount!r}, currency={self.currency!r})"
 
 
-class PaymentCreate(SQLModel):
-    plan: Plan
+class PaymentObjectCreate(SQLModel):
     payment_provider_id: int
     payment_method: PaymentMethodsEnum
+    status: PaymentStatusEnum
     currency: CurrencyEnum
-    amount: Decimal
+    amount: Decimal = Field(max_digits=8, decimal_places=2)
+    external_payment_id: str
+    external_payment_type_id: str
+
+
+class PaymentCreate(PaymentObjectCreate):
+    plan_id: Optional[int] = Field(default=None)
+    status: Optional[PaymentStatusEnum] = Field(default=PaymentStatusEnum.CREATED)
+    external_payment_id: Optional[str] = Field(default=None)
+    external_payment_type_id: Optional[str] = Field(default=None)
+    user_id: Optional[UUID] = Field(default=None)
+    return_url: Optional[str] = Field(default=None)
 
 
 class PaymentUpdate(SQLModel):
@@ -84,9 +91,8 @@ class PaymentUpdate(SQLModel):
 
 
 class PaymentMetadata(SQLModel):
-    subscription_id: int
     payment_provider_id: int
-    user_id: UUID
+    user_id: str | UUID
     plan_id: int
 
 

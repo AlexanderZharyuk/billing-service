@@ -1,10 +1,11 @@
 from enum import Enum
 from typing import Optional, List, TYPE_CHECKING
 
-from sqlmodel import SQLModel, Field, Relationship
-
+from sqlmodel import SQLModel, Field, Relationship, Column, Enum as SQLModelEnum
 from src.models import BaseResponseBody, Base
 from src.models import TimeStampedMixin
+from src.models import CurrencyEnum
+
 
 from src.v1.subscriptions.models import Subscription
 
@@ -23,6 +24,29 @@ class PlansToFeaturesLink(Base, table=True):
     feature_id: Optional[int] = Field(default=None, foreign_key="features.id", primary_key=True)
 
 
+class Price(Base, table=True):
+    __tablename__ = "prices"
+
+    class Config:
+        arbitrary_types_allowed = True
+
+    id: Optional[int] = Field(
+        default=None,
+        primary_key=True,
+        schema_extra={"examples": [5]},
+    )
+    plan_id: Optional[int] = Field(default=None, foreign_key="plans.id")
+    plan: "Plan" = Relationship(back_populates="prices")
+    currency: CurrencyEnum = Field(
+        default=CurrencyEnum.RUB, sa_column=Column(SQLModelEnum(CurrencyEnum))
+    )
+    amount: Decimal = Field(
+        max_digits=8,
+        decimal_places=2,
+        schema_extra={"examples": [1000.00]},
+    )
+
+      
 class Plan(Base, TimeStampedMixin, table=True):
     """Модель таблицы с планами."""
 

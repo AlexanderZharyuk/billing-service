@@ -35,6 +35,10 @@ class Settings(BaseSettings):
     shop_id: str = "set_JpHidKUSa3DDsGO2o1EXXQGL4XXgv1XwwAj6nnNmTt0"
     shop_key: str = "000000"
 
+    worker_success_sleep: int = 120
+    worker_pending_sleep: int = 172800
+    payment_waiting_date: int = 7
+
     debug: bool = False
 
     @cached_property
