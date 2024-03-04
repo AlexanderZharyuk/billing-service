@@ -84,7 +84,9 @@ class SubscriptionService(BasePostgresService):
         )
         return confirmation_url
 
-    async def create_by_webhook(self, external_payment_id: str | UUID, user_id: UUID, plan_id: int):
+    async def create_by_webhook(
+        self, external_payment_id: str | UUID, user_id: UUID, plan_id: int
+    ):
         payment = await self.payment_service.get_one_by_filter(
             filter_={"external_payment_id": external_payment_id}
         )
@@ -151,8 +153,9 @@ class SubscriptionService(BasePostgresService):
     ) -> dict | Subscription:
         updated_subscription = await super().update(entity_id, data, dump_to_model)
         logger.debug(
-            "Изменена подписка в БД. ID подписки %s, статус %s, дата окончания %s",
+            "Изменена подписка в БД. ID подписки %s, ID пользователя %s, статус %s, дата окончания %s",
             updated_subscription.id,
+            updated_subscription.user_id,
             updated_subscription.status,
             updated_subscription.ended_at,
         )
@@ -171,7 +174,11 @@ class SubscriptionService(BasePostgresService):
                 raise EntityNotFoundError(message="Subscription not found")
 
         canceled_subscription = await super().update(entity_id, SubscriptionCancel())
-        logger.debug("Отменена подписка в БД. ID подписки %s", canceled_subscription.id)
+        logger.debug(
+            "Отменена подписка в БД. ID подписки %s, ID пользователя %s",
+            canceled_subscription.id,
+            canceled_subscription.user_id,
+        )
         return canceled_subscription
 
 
