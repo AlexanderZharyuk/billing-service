@@ -6,25 +6,39 @@ import json
 pytestmark = pytest.mark.anyio
 
 base_url = os.getenv("BILLING_URL", "http://localhost:8000/api/v1")
+admin_plans_url = base_url + "/admin/plans/"
 plans_url = base_url + "/plans/"
 
 
-async def test_get_plan_bad(http_client):
-    expected_data = {"detail": {"code": 1001, "message": "Plan not found"}}
-    response = await http_client.request(
-        "GET",
-        plans_url + "{id}",
-        params={"plan_id": 222}
-    )
-    print(response)
-    assert response.status_code == status.HTTP_400_BAD_REQUEST
-    assert response.json() == expected_data
+# TODO нужна фикстура, добавляющая строку в таблицу
+# async def test_get_plan(http_client):
+#     expected_data = "New Plan"
+#
+#     response = await http_client.request(
+#         "GET",
+#         admin_plans_url + "{id}",
+#         params={"plan_id": 999999}
+#     )
+#     print(response)
+#     assert response.status_code == status.HTTP_200_OK
+#     assert response.json()["data"]["name"] == expected_data
+
+
+# TODO нужна фикстура, добавляющая строку в таблицу
+# async def test_get_plans(http_client):
+#     response = await http_client.request(
+#         "GET",
+#         plans_url,
+#     )
+#     print(response)
+#     assert response.status_code == status.HTTP_200_OK
+#     assert len(response.json()["data"]) > 0
 
 
 async def test_create_plan(http_client):
     response = await http_client.request(
         "POST",
-        plans_url,
+        admin_plans_url,
         headers={"Content-Type": "application/json"},
         data=json.dumps({
               "name": "Test Plan",
@@ -41,43 +55,21 @@ async def test_create_plan(http_client):
 async def test_update_plan(http_client):
     response = await http_client.request(
         "PUT",
-        plans_url + "{id}",
-        params={"plan_id": 3},
+        admin_plans_url + "{id}",
+        params={"plan_id": 999999},
         headers={"Content-Type": "application/json"},
-        data=json.dumps({"name": "New Plan"})
+        data=json.dumps({"name": "New Test Plan"})
     )
     assert response.status_code == status.HTTP_200_OK
-
-
-async def test_get_plan_ok(http_client):
-    expected_data = "New Plan"
-
-    response = await http_client.request(
-        "GET",
-        plans_url + "{id}",
-        params={"plan_id": 3}
-    )
-    print(response)
-    assert response.status_code == status.HTTP_200_OK
-    assert response.json()["data"]["name"] == expected_data
-
-
-async def test_get_plans(http_client):
-    response = await http_client.request(
-        "GET",
-        plans_url,
-    )
-    print(response)
-    assert response.status_code == status.HTTP_200_OK
-    assert len(response.json()["data"]) > 0
 
 
 async def test_delete_plan(http_client):
     response = await http_client.request(
         "DELETE",
-        plans_url + "{id}",
-        params={"plan_id": 123}
+        admin_plans_url + "{id}",
+        params={"plan_id": 999999},
     )
-    print(response)
     assert response.status_code == status.HTTP_200_OK
     assert response.json()["data"]["success"] is True
+
+

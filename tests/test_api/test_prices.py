@@ -2,56 +2,50 @@ import pytest
 import os
 from starlette import status
 import json
-import asyncpg
-
 
 pytestmark = pytest.mark.anyio
 
-base_url = os.getenv("BILLING_API_URL", "http://localhost:8000/api/v1/")
-features_url = base_url + "/features"
-admin_features_url = base_url + "admin/features/"
+base_url = os.getenv("BILLING_URL", "http://localhost:8000/api/v1")
+admin_price_url = base_url + "/admin/prices/"
+price_url = base_url + "/prices/"
 
 
 # TODO нужна фикстура, добавляющая строку в таблицу
-async def test_get_feature():
+async def test_get_price():
     pass
 
 
 # TODO нужна фикстура, добавляющая строку в таблицу
-async def test_get_features():
+async def test_get_prices():
     pass
 
 
-async def test_create_feature(http_client):
+async def test_create_price(http_client):
     response = await http_client.request(
         "POST",
-        admin_features_url,
+        admin_price_url,
         headers={"Content-Type": "application/json"},
-        data=json.dumps({
-              "name": "Test Feature",
-              "description": "Test Feature Description",
-              "available_entities": []
-            })
+        data=json.dumps({"plan_id": 999999, "currency": "RUB", "amount": 300})
     )
     assert response.status_code == status.HTTP_201_CREATED
 
 
-async def test_update_feature(http_client):
+async def test_update_price(http_client):
     response = await http_client.request(
         "PUT",
-        admin_features_url + "{id}",
-        params={"feature_id": 999999},
+        admin_price_url + "{id}",
         headers={"Content-Type": "application/json"},
-        data=json.dumps({"name": "New Test Feature"})
+        params={"price_id": 999999},
+        data=json.dumps({"currency": "RUB", "amount": 150})
     )
     assert response.status_code == status.HTTP_200_OK
 
 
-async def test_delete_feature(http_client):
+async def test_delete_price(http_client):
     response = await http_client.request(
         "DELETE",
-        admin_features_url + "{id}",
-        params={"feature_id": 999999},
+        admin_price_url + "{id}",
+        params={"price_id": 999999},
     )
     assert response.status_code == status.HTTP_200_OK
     assert response.json()["data"]["success"] is True
