@@ -2,7 +2,6 @@ from datetime import datetime, time, timedelta
 
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from src.core.helpers import rollback_transaction
 from src.core.interfaces import BasePostgresService, TypeProvider, get_provider_from_user_choice
 from src.v1.features.models import Feature
 from src.v1.payment_providers.models import PaymentProvider
@@ -16,9 +15,8 @@ from src.v1.subscriptions.service import get_subscription_service
 from src.workers.autopayment_worker import logger
 
 
-class ExpireSubscriptionsWorker(BasePostgresService):
+class ExpireSubscriptionsWorker:
     def __init__(self, session: AsyncSession = None, type_provider=TypeProvider.YOOKASSA):
-        self._model = Subscription
         self._session = session
         self.provider = get_provider_from_user_choice(type_provider)
         self.plan_service = get_plan_service(session=session)
@@ -45,7 +43,6 @@ class ExpireSubscriptionsWorker(BasePostgresService):
                     status=SubscriptionStatusEnum.EXPIRED, ended_at=subscription.ended_at
                 ),
             )
-            await self.session_commit()
             logger.info(
                 f"Subscriptions with {subscription.id} has been updated with status EXPIRED."
             )
@@ -65,11 +62,6 @@ class ExpireSubscriptionsWorker(BasePostgresService):
 
     async def update_subscription(
         self, entity_id: int, data: SubscriptionUpdate
-    ) -> Subscription:  # ToDo: Replace by using the subscription service method
-        result = await super().update(entity_id=entity_id, data=data, commit=False)
+    ) -> Subscription:
+        result = await self.subscription_service.update(entity_id=entity_id, data=data)
         return result
-
-    @rollback_transaction(method="UPDATE")
-    async def session_commit(self) -> None:
-        await self.session.commit()
-        return

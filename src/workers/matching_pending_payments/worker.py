@@ -28,7 +28,7 @@ class MatchingPendingPayments(BasePaymentMatchingWorker):
         payments_for_provider = await super().get_payments_for_provider(params=params)
         payments_for_db = await super().get_payments_for_db(filter_=filter_)
         intersection_items = set(payments_for_db).intersection(set(payments_for_provider))
-        if not intersection_items == 0:
+        if not intersection_items:
             logger.info("No fixed paid payments were found.")
             return
         for item in intersection_items:
@@ -50,7 +50,7 @@ class MatchingPendingPayments(BasePaymentMatchingWorker):
         payments_for_provider = await super().get_payments_for_provider(params=params)
         payments_for_db = await super().get_payments_for_db(filter_=filter_)
         different_items = set(payments_for_db).difference(set(payments_for_provider))
-        if not different_items == 0:
+        if not different_items:
             logger.info("There were no payments suspended in the 'PENDING' status.")
             return
         for item in different_items:

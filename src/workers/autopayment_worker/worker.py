@@ -96,9 +96,8 @@ class AutopaymentsWorker(BasePostgresService):
         result = await super().get_one_by_filter(filter_={"plan_id": plan_id})
         return result
 
-    async def update_subscription(self, entity_id: int, data: SubscriptionUpdate) -> Subscription: #ToDo: Replace by using the subscription service method
-        self._model = Subscription
-        result = await super().update(entity_id=entity_id, data=data, commit=False)
+    async def update_subscription(self, entity_id: int, data: SubscriptionUpdate) -> Subscription:
+        result = await self.subscription_service.update(entity_id=entity_id, data=data)
         return result
 
     async def create_external_payment(self, payment_method_id: str, price: Price) -> PaymentResponse:
