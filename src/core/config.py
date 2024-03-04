@@ -1,6 +1,5 @@
 from functools import cached_property, lru_cache
 from logging import config as logging_config
-import os
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -25,9 +24,9 @@ class Settings(BaseSettings):
     postgres_host: str = "localhost"
     postgres_port: int = 5432
     postgres_db: str = "billing_db"
-    postgres_user: str = "app"
-    postgres_password: str = "123qwe"
-    #
+    postgres_user: str = "user"
+    postgres_password: str = "password"
+
     session_cookie_name: str = "access"
     external_service_token_name: str = "token_id"
     auth_api_url: str = "http://localhost:8002/users"
@@ -40,7 +39,7 @@ class Settings(BaseSettings):
     worker_pending_sleep: int = 172800
     payment_waiting_date: int = 7
 
-    debug: bool = True
+    debug: bool = False
 
     @cached_property
     def pg_dsn(self):

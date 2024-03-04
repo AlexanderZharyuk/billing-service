@@ -1,16 +1,15 @@
 from typing import Annotated
 
 from fastapi import APIRouter, status, Depends, Request, Path
-from fastapi.responses import RedirectResponse
 
 from src.dependencies import get_current_user, is_admin
 from src.models import BaseResponseBody
 from src.models import User
 from src.v1.subscriptions.models import (
-    SubscriptionCreate,
     SingleSubscriptionResponse,
     SeveralSubscriptionsResponse,
     SubscriptionPause,
+    SubscriptionApiCreate,
 )
 from src.v1.subscriptions.service import PostgresSubscriptionService
 
@@ -64,15 +63,15 @@ async def get_subscriptions(
     description="Создать подписку.",
 )
 async def create_subscription(
-    data: SubscriptionCreate,
+    data: SubscriptionApiCreate,
     request: Request,
     service: PostgresSubscriptionService = PostgresSubscriptionService,
     current_user: User = Depends(get_current_user),
 ) -> BaseResponseBody:
     if data.return_url is None:
-        data.return_url = request.url_for("payments")
-    redirect_url = await service.create(entity=data, user=current_user)
-    return BaseResponseBody(data={"redirect_url": redirect_url})
+        data.return_url = request.url_for("subscriptions")
+    confirmation_url = await service.get_confirmation_url(entity=data, user=current_user)
+    return BaseResponseBody(data={"confirmation_url": confirmation_url})
 
 
 @router.patch(
@@ -88,7 +87,7 @@ async def pause_subscription(
     service: PostgresSubscriptionService = PostgresSubscriptionService,
     current_user: User = Depends(get_current_user),
 ) -> SingleSubscriptionResponse:
-    subscription = await service.update(
+    subscription = await service.pause(
         entity_id=subscription_id,
         data=data,
         user=current_user if not is_admin(current_user) else None,
@@ -108,7 +107,7 @@ async def cancel_subscription(
     service: PostgresSubscriptionService = PostgresSubscriptionService,
     current_user: User = Depends(get_current_user),
 ) -> BaseResponseBody:
-    subscription = await service.update(
+    subscription = await service.delete(
         entity_id=subscription_id,
         user=current_user if not is_admin(current_user) else None,
     )

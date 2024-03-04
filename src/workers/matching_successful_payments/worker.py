@@ -3,7 +3,8 @@ from datetime import timedelta
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from src.core.interfaces import TypeProvider
-from src.v1.payments.models import Payment, PaymentCreate, PaymentMetadata, PaymentStatusEnum
+from src.v1.payments.models import (Payment, PaymentCreate, PaymentMetadata,
+                                    PaymentStatusEnum)
 from src.workers.interfaces import BasePaymentMatchingWorker
 from src.workers.matching_successful_payments import logger
 
@@ -41,6 +42,7 @@ class MatchingSuccessPayments(BasePaymentMatchingWorker):
                 currency=object_.amount.currency,
                 amount=object_.amount.value,
                 external_payment_id=object_.id,
+                external_payment_type_id=1,
             )
             create_payment = await super().create(payment)
             logger.info(f"A payment has been created with id {create_payment.id}.")
