@@ -1,5 +1,6 @@
 import datetime
 import logging
+
 from typing import Any, Annotated
 from uuid import UUID
 
@@ -7,21 +8,20 @@ from fastapi import Depends
 from pydantic import BaseModel
 
 from src.core.exceptions import EntityNotFoundError, InvalidParamsError
-from src.core.interfaces import BasePostgresService
+from src.core.interfaces.database import BasePostgresService
 from src.db.postgres import DatabaseSession
 from src.models import User
 from src.v1.payments.models import PaymentCreate
 from src.v1.payments.service import PostgresPaymentService
 from src.v1.plans.service import PostgresPlanService
-from src.v1.plans.models import DurationUnitEnum
 from src.v1.subscriptions.models import (
     Subscription,
     SubscriptionPause,
     SubscriptionCreate,
     SubscriptionUpdate,
-    SubscriptionCancel,
     SubscriptionApiCreate,
     SubscriptionStatusEnum,
+    UserSubscriptionCancelEnum,
 )
 
 logger = logging.getLogger(__name__)
@@ -110,9 +110,8 @@ class SubscriptionService(BasePostgresService):
         )
         if not plan:
             raise InvalidParamsError(message="Plan not found")
-        duration_days = 31 if plan.duration_unit == DurationUnitEnum.MONTH.value else 365
-        entity.ended_at = entity.started_at + datetime.timedelta(days=duration_days)
 
+        entity.ended_at = Subscription.get_end_time_delta(plan)
         subscription = await super().create(entity)
         logger.debug(
             "Создана подписка в БД. ID подписки %s, ID плана %s, ID платежа %s, ID пользователя %s",
@@ -127,15 +126,11 @@ class SubscriptionService(BasePostgresService):
         self,
         entity_id: str,
         data: SubscriptionPause,
-        user: User | None = None,
         dump_to_model: bool = True,
     ) -> dict | Subscription:
-        if user:
-            subscription = await self.get_one_by_filter(
-                filter_={"id": entity_id, "user_id": user.id}
-            )
-            if not subscription:
-                raise EntityNotFoundError(message="Subscription not found")
+        subscription = await self.get_one_by_filter(filter_={"id": entity_id})
+        if not subscription:
+            raise EntityNotFoundError(message="Subscription not found")
 
         subscription = await self.get(entity_id, dump_to_model)
         new_ended_at = subscription.ended_at + datetime.timedelta(days=data.pause_duration_days)
@@ -164,22 +159,19 @@ class SubscriptionService(BasePostgresService):
     async def delete(
         self,
         entity_id: Any,
-        user: User | None = None,
     ) -> dict | Subscription:
-        if user:
-            subscription = await self.get_one_by_filter(
-                filter_={"id": entity_id, "user_id": user.id}
-            )
-            if not subscription:
-                raise EntityNotFoundError(message="Subscription not found")
+        subscription = await self.get_one_by_filter(filter_={"id": entity_id})
+        if not subscription:
+            raise EntityNotFoundError(message="Subscription not found")
 
-        canceled_subscription = await super().update(entity_id, SubscriptionCancel())
+        subscription.status = UserSubscriptionCancelEnum.CANCELED
+        await self.session.commit()
         logger.debug(
             "Отменена подписка в БД. ID подписки %s, ID пользователя %s",
-            canceled_subscription.id,
-            canceled_subscription.user_id,
+            subscription.id,
+            subscription.user_id,
         )
-        return canceled_subscription
+        return subscription
 
 
 def get_subscription_service(

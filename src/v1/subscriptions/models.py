@@ -1,5 +1,7 @@
 import uuid
-from datetime import datetime
+
+from dateutil.relativedelta import relativedelta
+from datetime import datetime, timedelta
 from enum import Enum
 from typing import Optional, List, TYPE_CHECKING
 from uuid import UUID
@@ -10,7 +12,7 @@ from src.v1.payments.models import PaymentMethodsEnum
 from src.models import CurrencyEnum, BaseResponseBody, Base, TimeStampedMixin
 
 if TYPE_CHECKING:
-    from src.v1.plans.models import Plan
+    from src.v1.plans.models import Plan, DurationUnitEnum
     from src.v1.payments.models import Payment
 
 
@@ -71,10 +73,31 @@ class Subscription(Base, TimeStampedMixin, table=True):
         back_populates="subscription", sa_relationship_kwargs={"lazy": "selectin"}
     )
 
+    @classmethod
+    def get_end_time_delta(cls, linked_plan):
+        time_delta = 0
+        if linked_plan.duration_unit == DurationUnitEnum.DAYS.value:
+            time_delta = timedelta(days=linked_plan.duration)
+        elif linked_plan.duration_unit == DurationUnitEnum.MONTH.value:
+            time_delta = relativedelta(months=linked_plan.duration)
+        elif linked_plan.duration_unit == DurationUnitEnum.YEAR.value:
+            time_delta = relativedelta(years=linked_plan.duration)
+
+        return time_delta
+
     def __repr__(self) -> str:
         return f"Subscription(id={self.id!r}, name={self.name!r}, user_id={self.user_id!r})"
 
 
+class SubscriptionPayLinkCreate(SQLModel):
+    plan_id: int
+    payment_provider_id: int
+    currency: CurrencyEnum
+    user_id: UUID | int
+    return_url: str
+
+
+# TODO: Мб убрать
 class SubscriptionApiCreate(SQLModel):
     plan_id: int
     payment_provider_id: int
