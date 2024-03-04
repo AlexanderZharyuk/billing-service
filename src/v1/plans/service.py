@@ -35,7 +35,7 @@ class PlanService(BasePostgresService):
         filter_: dict | None = None,
         dump_to_model: bool = True
     ) -> list[dict] | list[Plan]:
-        plans = await super().get_all(dump_to_model=dump_to_model)
+        plans = await super().get_all(filter_, dump_to_model)
         return plans
 
     async def create(self, entity: Plan, dump_to_model: bool = True) -> dict | Plan:
