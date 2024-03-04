@@ -3,7 +3,8 @@ from datetime import timedelta
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from src.core.interfaces import TypeProvider
-from src.v1.payments.models import Payment, PaymentCreate, PaymentMetadata, PaymentStatusEnum
+from src.v1.payments.models import (Payment, PaymentCreate, PaymentMetadata,
+                                    PaymentStatusEnum)
 from src.workers.interfaces import BasePaymentMatchingWorker
 from src.workers.matching_successful_payments import logger
 

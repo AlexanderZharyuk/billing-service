@@ -42,7 +42,7 @@ class AutopaymentsWorker(BasePostgresService):
         self.type_object = yoPayment
         self.date_now = datetime.combine(datetime.utcnow(), time.max)
 
-    async def autopayments(self):
+    async def autopayments(self) -> None:
         subscriptions = await self.get_subscriptions()
         if not subscriptions:
             logger.info("No subscriptions in need of auto-renewal were found.")
@@ -77,7 +77,7 @@ class AutopaymentsWorker(BasePostgresService):
             await self.session_commit()
             logger.info(f"A payment has been created with id {payment_create.id}.")
             logger.info(f"Subscriptions with {subscription.id} has been updated.")
-            return
+        return
 
     async def get_subscriptions(self) -> list[Subscription]:
         try:
@@ -99,7 +99,6 @@ class AutopaymentsWorker(BasePostgresService):
     async def update_subscription(self, entity_id: int, data: SubscriptionUpdate) -> Subscription: #ToDo: Replace by using the subscription service method
         self._model = Subscription
         result = await super().update(entity_id=entity_id, data=data, commit=False)
-        logger.info(f"Subscriptions with {entity_id} has been updated.")
         return result
 
     async def create_external_payment(self, payment_method_id: str, price: Price) -> PaymentResponse:
