@@ -44,8 +44,6 @@ class AutopaymentsWorker(BasePostgresService):
 
     async def autopayments(self):
         subscriptions = await self.get_subscriptions()
-        print(subscriptions)
-        exit()
         if not subscriptions:
             logger.info("No subscriptions in need of auto-renewal were found.")
         for subscription in subscriptions:
