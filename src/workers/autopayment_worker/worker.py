@@ -14,8 +14,9 @@ from src.v1.payment_providers.models import PaymentProvider
 from src.v1.payment_providers.service import get_payment_provider_service
 from src.v1.payments.models import Payment, PaymentCreate, PaymentStatusEnum
 from src.v1.payments.service import get_payment_service
-from src.v1.plans.models import DurationUnitEnum, Plan, Price
+from src.v1.plans.models import DurationUnitEnum, Plan
 from src.v1.plans.service import get_plan_service
+from src.v1.prices.models import Price
 from src.v1.prices.service import get_price_service
 from src.v1.subscriptions.models import (Subscription, SubscriptionStatusEnum,
                                          SubscriptionUpdate)
@@ -72,9 +73,10 @@ class AutopaymentsWorker(BasePostgresService):
                 ),
                 commit=False
             )
-            await self.update_subscription(
+            await self.subscription_service.update(
                 entity_id=subscription.id,
-                data=Subscription(status=SubscriptionStatusEnum.ACTIVE, ended_at=ended_at)
+                data=Subscription(status=SubscriptionStatusEnum.ACTIVE, ended_at=ended_at),
+                commit=False
             )
             await self.session_commit()
             logger.info(f"A payment has been created with id {payment_create.id}.")
@@ -93,18 +95,14 @@ class AutopaymentsWorker(BasePostgresService):
         except AttributeError as error:
             logger.info(f"An error occurred when requesting payments from the database:{error}")
 
-    async def update_subscription(self, entity_id: int, data: SubscriptionUpdate) -> Subscription:
-        result = await self.subscription_service.update(entity_id=entity_id, data=data, commit=False)
-        return result
-
     async def create_external_payment(self, payment_method_id: str, price: Price) -> PaymentResponse:
         try:
             result = await self.provider.create(
                 type_object=self.type_object,
                 params={
                     "amount": {
-                        "value": "1000",
-                        "currency": "RUB",
+                        "value": price.amount,
+                        "currency": price.currency.value,
                     },
                     "capture": True,
                     "payment_method_id": payment_method_id,

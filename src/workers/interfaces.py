@@ -16,6 +16,7 @@ from src.v1.payments.models import (Payment, PaymentMetadata,
 from src.v1.payments.service import get_payment_service
 from src.v1.plans.models import Plan
 from src.v1.plans.service import get_plan_service
+from src.v1.prices.models import Price
 from src.v1.subscriptions.models import (Subscription, SubscriptionCreate,
                                          SubscriptionStatusEnum)
 from src.v1.subscriptions.service import get_subscription_service
@@ -80,31 +81,5 @@ class BasePaymentMatchingWorker(BasePostgresService):
             plan_id=metadata.plan_id,
             payment_id=payment.id
         )
-        result = await self.subscriptions_service.create(entity=subscription, commit=False)
+        result = await self.subscriptions_service.create(entity=subscription)
         return result
-
-    @rollback_transaction(method="CREATE AND UPDATE")
-    async def session_commit(self) -> None:
-        await self.session.commit()
-        return
-
-#ToDo: DELETE!!!
-    async def test(self):
-        payment = await self.provider.create(type_object=self.type_object, params={
-            "amount": {
-                "value": "100.00",
-                "currency": "RUB"
-            },
-            "confirmation": {
-                "type": "redirect",
-                "return_url": "https://www.example.com/return_url"
-            },
-            "metadata": {
-                "payment_provider_id": "1",
-                "user_id": "2d77eb2c-000f-5000-a000-122e611af982",
-                "plan_id": "1"
-            },
-            "capture": True,
-            "description": "Заказ №1"
-        })
-        print(*payment)

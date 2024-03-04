@@ -114,7 +114,7 @@ class SubscriptionService(BasePostgresService):
         entity.ended_at = entity.started_at + datetime.timedelta(days=duration_days)
 
         subscription = await super().create(entity, commit)
-        if not commit:
+        if commit:
             logger.debug(
                 "Создана подписка в БД. ID подписки %s, ID плана %s, ID платежа %s, ID пользователя %s",
                 subscription.id,
@@ -154,7 +154,7 @@ class SubscriptionService(BasePostgresService):
         commit: bool = True
     ) -> dict | Subscription:
         updated_subscription = await super().update(entity_id, data, dump_to_model, commit)
-        if not commit:
+        if commit:
             logger.debug(
                 "Изменена подписка в БД. ID подписки %s, ID пользователя %s, статус %s, дата окончания %s",
                 updated_subscription.id,
