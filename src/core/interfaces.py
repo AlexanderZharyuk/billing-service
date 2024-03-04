@@ -1,18 +1,25 @@
+import logging
 from abc import ABC, abstractmethod
 from enum import Enum
-
 from typing import Any, Union, AsyncGenerator
 
 from pydantic import BaseModel
 from requests.exceptions import HTTPError
-from yookassa import Configuration, Payment, Receipt, Refund
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.exc import MultipleResultsFound
 from sqlalchemy import select, delete
+from sqlalchemy.exc import MultipleResultsFound
+from sqlalchemy.ext.asyncio import AsyncSession
+from yookassa import Configuration, Payment, Receipt, Refund
+from yookassa.domain.common.confirmation_type import ConfirmationType
+from yookassa.domain.request import PaymentRequest
+from yookassa.domain.request.payment_request_builder import PaymentRequestBuilder
+from yookassa.domain.response import PaymentResponse, ReceiptResponse, RefundResponse
 
 from src.core.config import settings
 from src.core.exceptions import EntityNotFoundError, MultipleEntitiesFoundError, InvalidParamsError
 from src.core.helpers import rollback_transaction
+from src.models import User
+from src.v1.payments.models import PaymentMetadata, PaymentCreate
+from src.v1.plans import Plan
 
 
 class TypeProvider(Enum):
@@ -20,41 +27,29 @@ class TypeProvider(Enum):
 
 
 class AbstractService(ABC):
-
     @abstractmethod
     async def get(self, entity_id: Any, dump_to_model: bool = True) -> dict | BaseModel:
         """Returns entity by id."""
 
     @abstractmethod
     async def get_one_by_filter(
-        self,
-        filter_: Any,
-        dump_to_model: bool = True
+        self, filter_: Any, dump_to_model: bool = True
     ) -> dict | BaseModel:
         """Returns entity by custom filter."""
 
     @abstractmethod
     async def get_all(
-        self,
-        filter_: dict | tuple | None = None,
-        dump_to_model: bool = True
+        self, filter_: dict | tuple | None = None, dump_to_model: bool = True
     ) -> list[dict] | list[BaseModel]:
         """Returns list of entities by filter."""
 
     @abstractmethod
-    async def create(
-        self,
-        entity: BaseModel,
-        dump_to_model: bool = True
-    ) -> dict | BaseModel:
+    async def create(self, entity: BaseModel, dump_to_model: bool = True) -> dict | BaseModel:
         """Creates entity."""
 
     @abstractmethod
     async def update(
-        self,
-        entity_id: str,
-        data: BaseModel,
-        dump_to_model: bool = True
+        self, entity_id: str, data: BaseModel, dump_to_model: bool = True
     ) -> dict | BaseModel:
         """Updates entity."""
 
@@ -64,14 +59,11 @@ class AbstractService(ABC):
 
 
 class BasePostgresService(AbstractService):
-
     @property
     def model(self):
         """Get entity model"""
         if not hasattr(self, "_model"):
-            raise NotImplementedError(
-                "The required attribute `model` not representing"
-            )
+            raise NotImplementedError("The required attribute `model` not representing")
         return self._model
 
     @property
@@ -93,9 +85,7 @@ class BasePostgresService(AbstractService):
         return result if dump_to_model else result.model_dump()
 
     async def get_one_by_filter(
-        self,
-        filter_: dict | tuple,
-        dump_to_model: bool = True
+        self, filter_: dict | tuple, dump_to_model: bool = True
     ) -> dict | BaseModel:
         if isinstance(filter_, dict):
             filter_ = self._build_filter(filter_)
@@ -113,9 +103,7 @@ class BasePostgresService(AbstractService):
         return entity if dump_to_model else entity.model_dump()
 
     async def get_all(
-        self,
-        filter_: dict | tuple | None = None,
-        dump_to_model: bool = True
+        self, filter_: dict | tuple | None = None, dump_to_model: bool = True
     ) -> list[dict] | list[BaseModel]:
         statement = select(self.model)
 
@@ -148,10 +136,7 @@ class BasePostgresService(AbstractService):
 
     @rollback_transaction(method="UPDATE")
     async def update(
-        self,
-        entity_id: str,
-        data: BaseModel,
-        dump_to_model: bool = True
+        self, entity_id: str, data: BaseModel, dump_to_model: bool = True
     ) -> dict | BaseModel:
         entity = await self.get(entity_id)
         for attribute, value in data.model_dump(exclude_none=True).items():
@@ -184,15 +169,21 @@ class AbstractProvider(ABC):
     async def create(
         self,
         type_object: Any,
-        params: dict,
+        params: dict | Any,
+        idempotency_key: str | None = None,
         dump_to_model: bool = True,
-    ) -> dict:
+    ) -> Any:
         """Creates entity."""
+
+    @abstractmethod
+    async def create_payment_request(self, *args, **kwargs) -> Any:
+        """Prepare payment request."""
 
     @classmethod
     def get_provider(cls, type_provider: TypeProvider):
         match type_provider:
-            case TypeProvider.YOOKASSA: return BaseYookassaProvider()
+            case TypeProvider.YOOKASSA:
+                return BaseYookassaProvider()
 
 
 class BaseYookassaProvider(AbstractProvider):
@@ -209,7 +200,7 @@ class BaseYookassaProvider(AbstractProvider):
             result = type_object.find_one(entity_id)
         except HTTPError:
             raise EntityNotFoundError(message=f"{entity_id} not found")
-        return result if dump_to_model else dict(**result)
+        return result if dump_to_model else dict(result)
 
     async def get_all(
         self,
@@ -220,29 +211,64 @@ class BaseYookassaProvider(AbstractProvider):
         cursor = None
         while True:
             if cursor:
-                params['cursor'] = cursor
+                params["cursor"] = cursor
             try:
                 result = type_object.list(params) if params else type_object.list()
-                yield result
+                data = result.items if dump_to_model else [dict(entity) for entity in result.items]
+                yield data
                 if not result.next_cursor or not params:
                     break
                 else:
                     cursor = result.next_cursor
             except HTTPError:
-                raise MultipleEntitiesFoundError
+                raise InvalidParamsError
 
     async def create(
         self,
         type_object: Union[Payment, Receipt, Refund],
-        params: dict,
+        params: Union[dict, PaymentRequest],
+        idempotency_key: str | None = None,
         dump_to_model: bool = True,
-    ) -> dict:
+    ) -> dict | Union[PaymentResponse, ReceiptResponse, RefundResponse]:
         try:
-            result = type_object.create(params)
-        except HTTPError:
+            result = type_object.create(params, idempotency_key=idempotency_key)
+        except HTTPError as error:
+            logging.exception(error)
             raise InvalidParamsError
         return result if dump_to_model else dict(**result)
 
+    @staticmethod
+    def create_payment_request(
+        entity: PaymentCreate,
+        plan: Plan,
+        user: User = None,
+    ) -> PaymentRequest:
+        metadata = PaymentMetadata(
+            plan_id=plan.id,
+            user_id=str(user.id if user else entity.user_id),
+            payment_provider_id=entity.payment_provider_id,
+        )
 
-def get_provider_from_user_choice(type_provider: TypeProvider) -> AbstractProvider:
+        builder = PaymentRequestBuilder()
+        builder.set_amount(
+            {"value": entity.amount, "currency": entity.currency.value}
+        ).set_confirmation(
+            {
+                "type": ConfirmationType.REDIRECT,
+                "return_url": entity.return_url if entity.return_url else "",
+            }
+        ).set_capture(
+            True
+        ).set_metadata(
+            metadata.model_dump()
+        )
+
+        if plan.is_recurring:
+            builder.set_payment_method_data(
+                {"type": entity.payment_method.value}
+            ).set_save_payment_method(True)
+        return builder.build()
+
+
+def get_provider_from_user_choice(type_provider: TypeProvider | Enum) -> AbstractProvider:
     return AbstractProvider.get_provider(type_provider)
