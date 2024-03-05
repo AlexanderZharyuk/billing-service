@@ -25,7 +25,7 @@ plans_data = [
         "name": "First Plan",
         "description": "",
         "is_active": True,
-        "is_reccuring": True,
+        "is_recurring": True,
         "duration": "1",
         "duration_unit": "month",
     },
@@ -34,7 +34,7 @@ plans_data = [
         "name": "Second Plan",
         "description": "",
         "is_active": False,
-        "is_reccuring": True,
+        "is_recurring": True,
         "duration": "1",
         "duration_unit": "month",
     },
@@ -43,7 +43,7 @@ plans_data = [
         "name": "Third Plan",
         "description": "",
         "is_active": True,
-        "is_reccuring": False,
+        "is_recurring": False,
         "duration": "1",
         "duration_unit": "month",
     },
@@ -120,3 +120,4 @@ subscriptions_data = [
 ]
 
 payment_providers = [{"id": 1000001, "name": "Yookassa", "description": None, "is_active": True}]
+

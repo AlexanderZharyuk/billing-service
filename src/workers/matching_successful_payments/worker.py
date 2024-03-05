@@ -29,7 +29,7 @@ class MatchingSuccessPayments(BasePaymentMatchingWorker):
         payments_for_provider = await super().get_payments_for_provider(params=params)
         payments_for_db = await super().get_payments_for_db(filter_=filter_)
         different_items = set(payments_for_provider).difference(set(payments_for_db))
-        if len(different_items) == 0:
+        if not different_items:
             logger.info("No discrepancies in payments were found.")
             return
         for item in different_items:
@@ -42,9 +42,8 @@ class MatchingSuccessPayments(BasePaymentMatchingWorker):
                 currency=object_.amount.currency,
                 amount=object_.amount.value,
                 external_payment_id=object_.id,
-                external_payment_type_id=1,
             )
-            create_payment = await super().create(payment)
+            create_payment = await super().create(entity=payment)
             logger.info(f"A payment has been created with id {create_payment.id}.")
             subscription_create = await super().create_subscription(
                 metadata=payment_metadata, payment=create_payment
