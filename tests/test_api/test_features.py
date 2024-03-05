@@ -27,11 +27,13 @@ async def test_create_feature(http_client):
         "POST",
         admin_features_url,
         headers={"Content-Type": "application/json"},
-        data=json.dumps({
-              "name": "Test Feature",
-              "description": "Test Feature Description",
-              "available_entities": []
-            })
+        data=json.dumps(
+            {
+                "name": "Test Feature",
+                "description": "Test Feature Description",
+                "available_entities": [],
+            }
+        ),
     )
     assert response.status_code == status.HTTP_201_CREATED
 
@@ -42,7 +44,7 @@ async def test_update_feature(http_client):
         admin_features_url + "{id}",
         params={"feature_id": 999999},
         headers={"Content-Type": "application/json"},
-        data=json.dumps({"name": "New Test Feature"})
+        data=json.dumps({"name": "New Test Feature"}),
     )
     assert response.status_code == status.HTTP_200_OK
 

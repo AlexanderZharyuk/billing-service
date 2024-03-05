@@ -25,7 +25,7 @@ async def test_create_price(http_client):
         "POST",
         admin_price_url,
         headers={"Content-Type": "application/json"},
-        data=json.dumps({"plan_id": 999999, "currency": "RUB", "amount": 300})
+        data=json.dumps({"plan_id": 999999, "currency": "RUB", "amount": 300}),
     )
     assert response.status_code == status.HTTP_201_CREATED
 
@@ -36,7 +36,7 @@ async def test_update_price(http_client):
         admin_price_url + "{id}",
         headers={"Content-Type": "application/json"},
         params={"price_id": 999999},
-        data=json.dumps({"currency": "RUB", "amount": 150})
+        data=json.dumps({"currency": "RUB", "amount": 150}),
     )
     assert response.status_code == status.HTTP_200_OK
 

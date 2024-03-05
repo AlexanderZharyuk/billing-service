@@ -26,7 +26,7 @@ async def test_create_subscription(http_client):
         "POST",
         admin_subscription_url,
         headers={"Content-Type": "application/json"},
-        data=json.dumps({"plan_id": 999999, "payment_provider_id": 1, "currency": "RUB"})
+        data=json.dumps({"plan_id": 999999, "payment_provider_id": 1, "currency": "RUB"}),
     )
     assert response.status_code == status.HTTP_201_CREATED
 

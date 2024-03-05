@@ -30,4 +30,3 @@ async def test_create_external_payment():
 
 async def test_calculating_end_date():
     pass
-
