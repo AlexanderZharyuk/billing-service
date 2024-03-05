@@ -46,7 +46,9 @@ async def get_subscription(
     user: User = Depends(get_current_user),
 ) -> SingleSubscriptionResponse:
     subscription = await service.get_one_by_filter(
-        filter_={"id": subscription_id, "user_id": user.id}, dump_to_model=False
+        filter_={"id": subscription_id, "user_id": user.id},
+        dump_to_model=False,
+        raise_on_error=True
     )
     return SingleSubscriptionResponse(data=subscription)
 
@@ -54,7 +56,7 @@ async def get_subscription(
 @router.delete(
     "{user_id}/{subscription_id}",
     summary="Отменить подписку",
-    response_model=BaseResponseBody,
+    response_model=SingleSubscriptionResponse,
     status_code=status.HTTP_200_OK,
     description="Отменить подписку.",
 )
@@ -64,7 +66,5 @@ async def cancel_subscription(
     service: PostgresSubscriptionService = PostgresSubscriptionService,
     current_user: User = Depends(get_current_user),
 ) -> BaseResponseBody:
-    subscription = await service.delete(
-        entity_id=subscription_id,
-    )
+    subscription = await service.delete(entity_id=subscription_id)
     return SingleSubscriptionResponse(data=subscription)

@@ -26,10 +26,6 @@ class UserSubscriptionPauseEnum(str, Enum):
     PAUSED = "paused"
 
 
-class UserSubscriptionCancelEnum(str, Enum):
-    CANCELED = "cancelled"
-
-
 class SubscriptionStatusEnum(str, Enum):
     CREATED = "created"
     ACTIVE = "active"
@@ -119,10 +115,6 @@ class SubscriptionPause(SQLModel):
 class SubscriptionUpdate(SQLModel):
     status: SubscriptionStatusEnum = Field(default=SubscriptionStatusEnum.PAUSED)
     ended_at: Optional[datetime] = Field(default=None)
-
-
-class SubscriptionCancel(SQLModel):
-    status: UserSubscriptionCancelEnum = Field(default=UserSubscriptionCancelEnum.CANCELED)
 
 
 class SingleSubscriptionResponse(BaseResponseBody):

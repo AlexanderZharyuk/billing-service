@@ -2,23 +2,21 @@ import datetime
 import logging
 
 from typing import Any, Annotated
-from uuid import UUID
 
 from fastapi import Depends
-from pydantic import BaseModel
 
 from src.core.exceptions import EntityNotFoundError, InvalidParamsError
 from src.core.interfaces.database import BasePostgresService
 from src.db.postgres import DatabaseSession
 from src.v1.payments.service import PostgresPaymentService
 from src.v1.plans.service import PostgresPlanService
+from src.v1.subscriptions.exceptions import SubscriptionAlreadyDeletedError
 from src.v1.subscriptions.models import (
     Subscription,
     SubscriptionPause,
     SubscriptionCreate,
     SubscriptionUpdate,
     SubscriptionStatusEnum,
-    UserSubscriptionCancelEnum,
 )
 
 logger = logging.getLogger(__name__)
@@ -41,11 +39,13 @@ class SubscriptionService(BasePostgresService):
         return subscription
 
     async def get_one_by_filter(
-        self, filter_: dict, dump_to_model: bool = True
+        self, filter_: dict, dump_to_model: bool = True, raise_on_error: bool = False
     ) -> dict | Subscription:
         try:
             subscription = await super().get_one_by_filter(filter_, dump_to_model)
         except EntityNotFoundError:
+            if raise_on_error:
+                raise EntityNotFoundError(message="Subscription not found")
             return None if dump_to_model else {}
         return subscription
 
@@ -87,10 +87,7 @@ class SubscriptionService(BasePostgresService):
 
         subscription = await self.get(entity_id, dump_to_model)
         new_ended_at = subscription.ended_at + datetime.timedelta(days=data.pause_duration_days)
-        update_data = SubscriptionUpdate(
-            status=data.status,
-            ended_at=new_ended_at,
-        )
+        update_data = SubscriptionUpdate(status=data.status, ended_at=new_ended_at)
         return await self.update(entity_id, update_data, dump_to_model)
 
     async def update(
@@ -109,19 +106,22 @@ class SubscriptionService(BasePostgresService):
         )
         return updated_subscription
 
-    async def delete(self, entity_id: Any) -> dict | Subscription:
+    async def delete(self, entity_id: Any, dump_to_model: bool = True) -> dict | Subscription:
         subscription = await self.get_one_by_filter(filter_={"id": entity_id})
         if not subscription:
             raise EntityNotFoundError(message="Subscription not found")
 
-        subscription.status = UserSubscriptionCancelEnum.CANCELED
+        if subscription.status == SubscriptionStatusEnum.DELETED:
+            raise SubscriptionAlreadyDeletedError
+
+        subscription.status = SubscriptionStatusEnum.DELETED
         await self.session.commit()
         logger.debug(
             "Отменена подписка в БД. ID подписки %s, ID пользователя %s",
             subscription.id,
             subscription.user_id,
         )
-        return subscription
+        return subscription if dump_to_model else subscription.model_dump()
 
 
 def get_subscription_service(
