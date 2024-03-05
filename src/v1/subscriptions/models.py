@@ -36,6 +36,7 @@ class SubscriptionStatusEnum(str, Enum):
     EXPIRED = "expired"
     CANCELED = "cancelled"
     PAUSED = "paused"
+    DELETED = "deleted"
 
 
 class Subscription(Base, TimeStampedMixin, table=True):
@@ -74,7 +75,6 @@ class Subscription(Base, TimeStampedMixin, table=True):
     plan: "Plan" = Relationship(
         back_populates="subscriptions", sa_relationship_kwargs={"lazy": "selectin"}
     )
-    payment_id: int = Field(foreign_key="payments.id")
     payments: List["Payment"] = Relationship(
         back_populates="subscription", sa_relationship_kwargs={"lazy": "selectin"}
     )
@@ -103,23 +103,12 @@ class SubscriptionPayLinkCreate(SQLModel):
     return_url: str
 
 
-# TODO: Мб убрать
-class SubscriptionApiCreate(SQLModel):
-    plan_id: int
-    payment_provider_id: int
-    currency: CurrencyEnum
-    payment_method: PaymentMethodsEnum
-    user_id: Optional[UUID] = Field(default=None)
-    return_url: Optional[str] = Field(default=None)
-
-
 class SubscriptionCreate(SQLModel):
     user_id: Optional[UUID] = Field(default=None)
     status: SubscriptionStatusEnum
     started_at: Optional[datetime] = Field(default_factory=datetime.utcnow)
     ended_at: Optional[datetime] = Field(default=None)
     plan_id: int
-    payment_id: int
 
 
 class SubscriptionPause(SQLModel):

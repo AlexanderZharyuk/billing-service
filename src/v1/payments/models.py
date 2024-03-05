@@ -45,6 +45,7 @@ class Payment(Base, TimeStampedMixin, table=True):
         schema_extra={"examples": [5]},
     )
     subscription: "Subscription" = Relationship(back_populates="payments")
+    subscription_id: int = Field(foreign_key="subscriptions.id", nullable=True)
     payment_provider_id: int = Field(foreign_key="payment_providers.id")
     payment_provider: "PaymentProvider" = Relationship(back_populates="payments")
     payment_method: PaymentMethodsEnum = Field(
@@ -74,9 +75,10 @@ class PaymentCreate(SQLModel):
 
 
 class PaymentUpdate(SQLModel):
-    status: Optional[PaymentStatusEnum] = Field(default=None)
-    external_payment_id: Optional[str] = Field(default=None)
-    payment_method: Optional[str] = Field(default=None)
+    status: PaymentStatusEnum | None = Field(default=None)
+    external_payment_id: str | None = Field(default=None)
+    payment_method: str | None = Field(default=None)
+    subscription_id: int | None = Field(default=None)
 
 
 class PaymentMetadata(SQLModel):

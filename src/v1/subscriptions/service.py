@@ -10,8 +10,6 @@ from pydantic import BaseModel
 from src.core.exceptions import EntityNotFoundError, InvalidParamsError
 from src.core.interfaces.database import BasePostgresService
 from src.db.postgres import DatabaseSession
-from src.models import User
-from src.v1.payments.models import PaymentCreate
 from src.v1.payments.service import PostgresPaymentService
 from src.v1.plans.service import PostgresPlanService
 from src.v1.subscriptions.models import (
@@ -19,7 +17,6 @@ from src.v1.subscriptions.models import (
     SubscriptionPause,
     SubscriptionCreate,
     SubscriptionUpdate,
-    SubscriptionApiCreate,
     SubscriptionStatusEnum,
     UserSubscriptionCancelEnum,
 )
@@ -39,13 +36,13 @@ class SubscriptionService(BasePostgresService):
         self.payment_service = payment_service
         self.plan_service = plan_service
 
-    async def get(self, entity_id: Any, dump_to_model: bool = True) -> dict | BaseModel:
+    async def get(self, entity_id: Any, dump_to_model: bool = True) -> dict | Subscription:
         subscription = await super().get(entity_id, dump_to_model)
         return subscription
 
     async def get_one_by_filter(
         self, filter_: dict, dump_to_model: bool = True
-    ) -> dict | BaseModel:
+    ) -> dict | Subscription:
         try:
             subscription = await super().get_one_by_filter(filter_, dump_to_model)
         except EntityNotFoundError:
@@ -58,50 +55,6 @@ class SubscriptionService(BasePostgresService):
         subscriptions = await super().get_all(filter_, dump_to_model)
         return subscriptions
 
-    async def get_confirmation_url(self, entity: SubscriptionApiCreate, user: User = None) -> str:
-        plan = await self.plan_service.get_one_by_filter(
-            filter_={"id": entity.plan_id, "is_active": True}
-        )
-        if not plan:
-            raise InvalidParamsError(message="Plan not found")
-
-        amount = list(filter(lambda x: x.currency == entity.currency, plan.prices))
-        if not amount or len(amount) > 1:
-            raise InvalidParamsError(message="Price in this currency not found")
-
-        payment_create = PaymentCreate(
-            plan_id=plan.id,
-            payment_provider_id=entity.payment_provider_id,
-            payment_method=entity.payment_method,
-            currency=entity.currency,
-            amount=amount[0].amount,
-            user_id=user.id if user else entity.user_id,
-            return_url=entity.return_url,
-        )
-        confirmation_url, payment = await self.payment_service.create(
-            entity=payment_create,
-            user=user,
-        )
-        return confirmation_url
-
-    async def create_by_webhook(
-        self, external_payment_id: str | UUID, user_id: UUID, plan_id: int
-    ):
-        payment = await self.payment_service.get_one_by_filter(
-            filter_={"external_payment_id": external_payment_id}
-        )
-        if not payment:
-            raise InvalidParamsError(message="Payment not found")
-
-        subscription = SubscriptionCreate(
-            user_id=user_id,
-            status=SubscriptionStatusEnum.ACTIVE,
-            plan_id=plan_id,
-            payment_id=payment.id,
-        )
-        subscription = await self.create(entity=subscription)
-        return subscription
-
     async def create(
         self, entity: SubscriptionCreate, dump_to_model: bool = True
     ) -> dict | Subscription:
@@ -113,14 +66,11 @@ class SubscriptionService(BasePostgresService):
 
         ended_date = entity.started_at + Subscription.get_end_time_delta(plan)
         entity.ended_at = ended_date
-        print(type(entity.ended_at))
-        print(type(entity.started_at))
         subscription = await super().create(entity)
         logger.debug(
-            "Создана подписка в БД. ID подписки %s, ID плана %s, ID платежа %s, ID пользователя %s",
+            "Создана подписка в БД. ID подписки %s, ID плана %s, ID пользователя %s",
             subscription.id,
             subscription.plan_id,
-            subscription.payment_id,
             subscription.user_id,
         )
         return subscription if dump_to_model else subscription.model_dump()

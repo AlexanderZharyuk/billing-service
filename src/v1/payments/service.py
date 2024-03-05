@@ -28,13 +28,13 @@ class PaymentService(BasePostgresService):
         self._model = Payment
         self._session = session
 
-    async def get(self, entity_id: Any, dump_to_model: bool = True) -> dict | BaseModel:
+    async def get(self, entity_id: Any, dump_to_model: bool = True) -> dict | Payment:
         payment = await super().get(entity_id, dump_to_model)
         return payment
 
     async def get_one_by_filter(
         self, filter_: dict | tuple, dump_to_model: bool = True
-    ) -> dict | BaseModel:
+    ) -> dict | Payment:
         try:
             payment = await super().get_one_by_filter(filter_, dump_to_model)
         except EntityNotFoundError:
