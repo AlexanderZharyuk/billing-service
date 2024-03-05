@@ -1,4 +1,5 @@
 from enum import Enum
+from decimal import Decimal
 from typing import Optional, List, TYPE_CHECKING
 
 from sqlmodel import SQLModel, Field, Relationship
@@ -13,6 +14,7 @@ if TYPE_CHECKING:
 
 
 class DurationUnitEnum(str, Enum):
+    DAY = "day"
     MONTH = "month"
     YEAR = "year"
 

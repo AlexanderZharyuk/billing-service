@@ -32,8 +32,8 @@ class Settings(BaseSettings):
     auth_api_url: str = "http://localhost:8002/users"
     trusted_service_allowed_token: str = "casdnvufyrvuy123sdfc981231asd"
 
-    shop_id: str = "set_JpHidKUSa3DDsGO2o1EXXQGL4XXgv1XwwAj6nnNmTt0"
-    shop_key: str = "000000"
+    yookassa_shop_secret_key: str = "set_JpHidKUSa3DDsGO2o1EXXQGL4XXgv1XwwAj6nnNmTt0"
+    yookassa_shop_id: str = "000000"
 
     worker_success_sleep: int = 120
     worker_pending_sleep: int = 172800
