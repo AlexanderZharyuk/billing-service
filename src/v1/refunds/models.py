@@ -40,7 +40,7 @@ class Refunds(Base, TimeStampedMixin, table=True):
     )
     reason_id: int = Field(foreign_key="refund_reasons.id")
     reason: "RefundReason" = Relationship(back_populates="refunds")
-    subscription_id: int = Field(foreign_key="subscription.id")
+    subscription_id: int = Field(foreign_key="subscriptions.id")
     subscription: "Subscription" = Relationship(back_populates="refunds")
     user_id: int = Field(
         nullable=False,
