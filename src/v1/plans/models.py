@@ -11,12 +11,6 @@ if TYPE_CHECKING:
     from src.v1.prices.models import Price
 
 
-class DurationUnitEnum(str, Enum):
-    DAYS = "days"
-    MONTH = "month"
-    YEAR = "year"
-
-
 class PlansToFeaturesLink(Base, table=True):
     plan_id: Optional[int] = Field(default=None, foreign_key="plans.id", primary_key=True)
     feature_id: Optional[int] = Field(default=None, foreign_key="features.id", primary_key=True)

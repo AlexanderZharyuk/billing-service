@@ -7,8 +7,10 @@ from yookassa.domain.notification import WebhookNotification
 from src.v1.payments.models import (
     PaymentUpdate,
 )
-from src.v1.payments.service import PostgresPaymentService
+from src.v1.subscriptions.models import SubscriptionCreate, SubscriptionStatusEnum
 from src.v1.subscriptions.service import PostgresSubscriptionService
+from src.v1.payments.service import PostgresPaymentService
+from src.v1.payments.models import PaymentMetadata
 
 router = APIRouter(prefix="/webhooks", tags=["Webhooks"])
 logger = logging.getLogger(__name__)
@@ -23,7 +25,7 @@ logger = logging.getLogger(__name__)
 )
 async def status_payment_yookassa(
     data: dict,
-    service: PostgresPaymentService = PostgresPaymentService,
+    payment_service: PostgresPaymentService = PostgresPaymentService,
     subscription_service: PostgresSubscriptionService = PostgresSubscriptionService,
 ) -> JSONResponse:
     """
@@ -58,18 +60,25 @@ async def status_payment_yookassa(
     notification_object = WebhookNotification(data)
     event = notification_object.event
 
+    # TODO: Добавить логгинг. Провести рефактор
     match event:
         case "payment.succeeded" | "payment.canceled":
-            payment_update = PaymentUpdate(status=notification_object.object.status)
-            await service.update(
+            payment_update = PaymentUpdate(
+                status=notification_object.object.status,
+                payment_method=notification_object.object.payment_method.type
+            )
+            payment = await payment_service.update(
                 external_payment_id=notification_object.object.id, data=payment_update
             )
             if event == "payment.succeeded":
-                await subscription_service.create_by_webhook(
-                    external_payment_id=notification_object.object.id,
-                    user_id=notification_object.object.metadata["user_id"],
-                    plan_id=notification_object.object.metadata["plan_id"],
+                payment_metadata = PaymentMetadata(**notification_object.object.metadata)
+                subscription = SubscriptionCreate(
+                    user_id=payment_metadata.user_id,
+                    status=SubscriptionStatusEnum.ACTIVE,
+                    plan_id=payment_metadata.plan_id,
+                    payment_id=payment.id
                 )
+                await subscription_service.create(subscription)
         case "payment.waiting_for_capture":
             ...
         case "refund.succeeded":

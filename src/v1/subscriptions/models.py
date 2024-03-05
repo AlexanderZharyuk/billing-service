@@ -12,8 +12,14 @@ from src.v1.payments.models import PaymentMethodsEnum
 from src.models import CurrencyEnum, BaseResponseBody, Base, TimeStampedMixin
 
 if TYPE_CHECKING:
-    from src.v1.plans.models import Plan, DurationUnitEnum
+    from src.v1.plans.models import Plan
     from src.v1.payments.models import Payment
+
+
+class DurationUnitEnum(str, Enum):
+    DAYS = "days"
+    MONTH = "month"
+    YEAR = "year"
 
 
 class UserSubscriptionPauseEnum(str, Enum):

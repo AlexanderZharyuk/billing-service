@@ -156,7 +156,6 @@ class YooKassaPaymentProvider(AbstractProvider, AbstractProviderMixin):
 
         payment = PaymentCreate(
             payment_provider_id=params.payment_provider_id,
-            user_id=params.user_id,
             currency=params.currency,
             amount=payment_amount
         )
@@ -165,12 +164,16 @@ class YooKassaPaymentProvider(AbstractProvider, AbstractProviderMixin):
             user_id=params.user_id,
             payment_provider_id=params.payment_provider_id,
         )
+        # TODO:
+        #  Подумать над idempodentency key чтобы на генерировать новый платеж на каждый запрос у нас в БД.
+        #  По-хорошему здесь нужен кэш с TTL. Сделаю на последней итерации.
         builder = await self.build_payment(payment, metadata, plan.is_recurring, params.return_url)
         task = await asyncio.gather(self.create(Payment, builder))
         provider_payment, *_ = task
         pay_link = provider_payment.confirmation.confirmation_url
+        payment.external_payment_id = provider_payment.id
 
-        await self.payment_service.create(payment)
+        await self.payment_service.get_or_create(payment)
         return pay_link
 
     @staticmethod
@@ -189,7 +192,7 @@ class YooKassaPaymentProvider(AbstractProvider, AbstractProviderMixin):
             {"type": ConfirmationType.REDIRECT, "return_url": return_url}
         )
         builder.set_capture(True)
-        builder.set_metadata(payment_metadata.model_dump())
+        builder.set_metadata(payment_metadata.model_dump(mode="json"))
 
         if is_recurring:
             builder.set_save_payment_method(True)

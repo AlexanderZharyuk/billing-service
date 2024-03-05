@@ -11,7 +11,7 @@ from src.db.postgres import DatabaseSession
 from src.v1.payments.models import (
     Payment,
     PaymentUpdate,
-    PaymentCreate,
+    PaymentCreate, PaymentStatusEnum,
 )
 from src.v1.plans.service import PostgresPlanService
 
@@ -62,6 +62,25 @@ class PaymentService(BasePostgresService):
 
     async def delete(self, entity_id: Any) -> None:
         raise NotImplementedError
+
+    async def get_or_create(
+        self,
+        entity: PaymentCreate,
+        dump_to_model: bool = True
+    ) -> tuple[Payment, bool]:
+        try:
+            payment = await super().get_one_by_filter(
+                filter_=(
+                    Payment.status == PaymentStatusEnum.CREATED,
+                    Payment.external_payment_id == entity.external_payment_id
+                )
+            )
+            created = False
+        except EntityNotFoundError:
+            payment = await super().create(entity, dump_to_model)
+            created = True
+
+        return payment, created
 
 
 def get_payment_service(

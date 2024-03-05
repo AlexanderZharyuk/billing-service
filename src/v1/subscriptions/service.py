@@ -111,7 +111,10 @@ class SubscriptionService(BasePostgresService):
         if not plan:
             raise InvalidParamsError(message="Plan not found")
 
-        entity.ended_at = Subscription.get_end_time_delta(plan)
+        ended_date = entity.started_at + Subscription.get_end_time_delta(plan)
+        entity.ended_at = ended_date
+        print(type(entity.ended_at))
+        print(type(entity.started_at))
         subscription = await super().create(entity)
         logger.debug(
             "Создана подписка в БД. ID подписки %s, ID плана %s, ID платежа %s, ID пользователя %s",
@@ -156,10 +159,7 @@ class SubscriptionService(BasePostgresService):
         )
         return updated_subscription
 
-    async def delete(
-        self,
-        entity_id: Any,
-    ) -> dict | Subscription:
+    async def delete(self, entity_id: Any) -> dict | Subscription:
         subscription = await self.get_one_by_filter(filter_={"id": entity_id})
         if not subscription:
             raise EntityNotFoundError(message="Subscription not found")
