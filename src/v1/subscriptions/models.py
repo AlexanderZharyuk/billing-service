@@ -70,6 +70,7 @@ class Subscription(Base, TimeStampedMixin, table=True):
     payments: List["Payment"] = Relationship(
         back_populates="subscription", sa_relationship_kwargs={"lazy": "selectin"}
     )
+    refunds: List["Refunds"] = Relationship(back_populates="subscription", sa_relationship_kwargs={"lazy": "selectin"})
 
     def __repr__(self) -> str:
         return f"Subscription(id={self.id!r}, name={self.name!r}, user_id={self.user_id!r})"

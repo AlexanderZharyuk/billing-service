@@ -13,7 +13,9 @@ from src.models import Base
 from src.v1.features.models import Feature
 from src.v1.payments.models import Payment
 from src.v1.payment_providers.models import PaymentProvider
-from src.v1.plans.models import Plan, Price
+from src.v1.plans.models import Plan
+from src.v1.prices.models import Price
+from src.v1.refunds.models import RefundReason, Refunds
 from src.v1.subscriptions.models import Subscription
 from src.models import Base
 
