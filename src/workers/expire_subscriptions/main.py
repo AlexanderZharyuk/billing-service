@@ -2,8 +2,8 @@ import asyncio
 
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from src.workers.expire_subscriptions_worker import logger
-from src.workers.expire_subscriptions_worker.worker import ExpireSubscriptionsWorker
+from src.workers.expire_subscriptions import logger
+from src.workers.expire_subscriptions.worker import ExpireSubscriptionsWorker
 from src.workers.helpers import session_injection
 
 

@@ -5,8 +5,7 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 from src.core.config import settings
 from src.workers.helpers import session_injection
 from src.workers.matching_successful_payments import logger
-from src.workers.matching_successful_payments.worker import \
-    MatchingSuccessPayments
+from src.workers.matching_successful_payments.worker import MatchingSuccessPayments
 
 
 @session_injection

@@ -7,8 +7,7 @@ from yookassa.domain.response import PaymentResponse
 
 from src.core.exceptions import InvalidParamsError
 from src.core.helpers import rollback_transaction
-from src.core.interfaces import (BasePostgresService, TypeProvider,
-                                 get_provider_from_user_choice)
+from src.core.interfaces import BasePostgresService, TypeProvider, get_provider_from_user_choice
 from src.v1.features.models import Feature
 from src.v1.payment_providers.models import PaymentProvider
 from src.v1.payment_providers.service import get_payment_provider_service
@@ -18,10 +17,9 @@ from src.v1.plans.models import DurationUnitEnum, Plan
 from src.v1.plans.service import get_plan_service
 from src.v1.prices.models import Price
 from src.v1.prices.service import get_price_service
-from src.v1.subscriptions.models import (Subscription, SubscriptionStatusEnum,
-                                         SubscriptionUpdate)
+from src.v1.subscriptions.models import Subscription, SubscriptionStatusEnum, SubscriptionUpdate
 from src.v1.subscriptions.service import get_subscription_service
-from src.workers.autopayment_worker import logger
+from src.workers.autopayments import logger
 
 
 class AutopaymentsWorker(BasePostgresService):
@@ -38,9 +36,7 @@ class AutopaymentsWorker(BasePostgresService):
             payment_provider_service=self.payment_provider_service,
         )
         self.subscription_service = get_subscription_service(
-            session=session,
-            payment_service=self.payment_service,
-            plan_service=self.plan_service
+            session=session, payment_service=self.payment_service, plan_service=self.plan_service
         )
         self.type_object = yoPayment
         self.date_now = datetime.combine(datetime.utcnow(), time.max)
@@ -52,7 +48,9 @@ class AutopaymentsWorker(BasePostgresService):
         for subscription in subscriptions:
             payment = await super().get(entity_id=subscription.payment_id)
             external_payment_id = payment.external_payment_id
-            price = await self.price_service.get_one_by_filter(filter_={"plan_id": subscription.plan_id})
+            price = await self.price_service.get_one_by_filter(
+                filter_={"plan_id": subscription.plan_id}
+            )
             plan = await self.plan_service.get(entity_id=subscription.plan_id)
             ended_at = await self.calculationg_end_date(plan=plan)
             external_payment = await self.create_external_payment(
@@ -71,12 +69,12 @@ class AutopaymentsWorker(BasePostgresService):
                     amount=external_payment.amount.value,
                     external_payment_id=external_payment_id,
                 ),
-                commit=False
+                commit=False,
             )
             await self.subscription_service.update(
                 entity_id=subscription.id,
                 data=Subscription(status=SubscriptionStatusEnum.ACTIVE, ended_at=ended_at),
-                commit=False
+                commit=False,
             )
             await self.session_commit()
             logger.info(f"A payment has been created with id {payment_create.id}.")
@@ -95,7 +93,9 @@ class AutopaymentsWorker(BasePostgresService):
         except AttributeError as error:
             logger.info(f"An error occurred when requesting payments from the database:{error}")
 
-    async def create_external_payment(self, payment_method_id: str, price: Price) -> PaymentResponse:
+    async def create_external_payment(
+        self, payment_method_id: str, price: Price
+    ) -> PaymentResponse:
         try:
             result = await self.provider.create(
                 type_object=self.type_object,

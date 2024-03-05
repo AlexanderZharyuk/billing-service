@@ -2,8 +2,8 @@ import asyncio
 
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from src.workers.autopayment_worker import logger
-from src.workers.autopayment_worker.worker import AutopaymentsWorker
+from src.workers.autopayments import logger
+from src.workers.autopayments.worker import AutopaymentsWorker
 from src.workers.helpers import session_injection
 
 

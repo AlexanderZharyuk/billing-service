@@ -230,7 +230,7 @@ class AbstractProvider(ABC):
 
 class BaseYookassaProvider(AbstractProvider):
     def __init__(self):
-        Configuration.configure(settings.shop_id, settings.shop_key)
+        Configuration.configure(settings.yookassa_shop_id, settings.yookassa_shop_secret_key)
 
     async def get(
         self,

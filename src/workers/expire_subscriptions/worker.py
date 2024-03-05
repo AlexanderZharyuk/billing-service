@@ -13,7 +13,7 @@ from src.v1.plans.service import get_plan_service
 from src.v1.prices.models import Price
 from src.v1.subscriptions.models import Subscription, SubscriptionStatusEnum, SubscriptionUpdate
 from src.v1.subscriptions.service import get_subscription_service
-from src.workers.autopayment_worker import logger
+from src.workers.expire_subscriptions import logger
 
 
 class ExpireSubscriptionsWorker:
@@ -39,7 +39,7 @@ class ExpireSubscriptionsWorker:
         for subscription in subscriptions:
             await self.subscription_service.update(
                 entity_id=subscription.id,
-                data=SubscriptionUpdate(status=SubscriptionStatusEnum.EXPIRED)
+                data=SubscriptionUpdate(status=SubscriptionStatusEnum.EXPIRED),
             )
 
     async def get_subscriptions(self) -> list[Subscription]:
