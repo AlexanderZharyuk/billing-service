@@ -21,6 +21,9 @@ from src.v1.prices.routers import router as prices_router
 from src.v1.refunds.routers import router as refund_router
 from src.v1.subscriptions.routers import router as subscription_router
 from src.v1.webhooks.routers import router as webhooks_router
+from src.v1.refunds.routers import router as refund_router
+from src.v1.payment_providers.routers import router as payment_provider_router
+
 
 v1_router = APIRouter(
     prefix="/api/v1",
@@ -36,6 +39,7 @@ v1_router.include_router(prices_router)
 v1_router.include_router(subscription_router)
 v1_router.include_router(refund_router)
 v1_router.include_router(payment_router)
+v1_router.include_router(payment_provider_router)
 v1_router.include_router(webhooks_router)
 v1_router.include_router(admin_router)
 v1_router.include_router(healthcheck_router)

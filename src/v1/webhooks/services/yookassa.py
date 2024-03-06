@@ -26,7 +26,7 @@ class YooKassaWebhookService:
     async def activate_subscription(self, notification_data: WebhookNotification):
         payment_metadata = PaymentMetadata(**notification_data.object.metadata)
         subscription = await self.subscription_service.get_one_by_filter(
-            {"user_id": payment_metadata.user_id, "status": SubscriptionStatusEnum.ACTIVE}
+            {"user_id": str(payment_metadata.user_id), "status": SubscriptionStatusEnum.ACTIVE}
         )
         if subscription:
             new_end_date = datetime.utcnow() + Subscription.get_end_time_delta(subscription.plan)
@@ -37,7 +37,7 @@ class YooKassaWebhookService:
             await self.subscription_service.update(subscription.id, subscription_data)
         else:
             subscription_data = SubscriptionCreate(
-                user_id=payment_metadata.user_id,
+                user_id=str(payment_metadata.user_id),
                 status=SubscriptionStatusEnum.ACTIVE,
                 plan_id=payment_metadata.plan_id,
             )
