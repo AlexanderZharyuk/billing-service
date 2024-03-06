@@ -17,7 +17,7 @@ from src.core.interfaces.base import AbstractProvider
 from src.core.config import settings
 from src.db.postgres import DatabaseSession
 from src.v1.payment_providers.models import PaymentProvider, PaymentProviderUpdate, \
-    PaymentProviderRefundParams
+    PaymentProviderRefundParams, PaymentProviderCreate
 from src.v1.payments.service import PaymentService, get_payment_service
 from src.v1.subscriptions.models import SubscriptionPayLinkCreate
 from src.v1.payments.models import PaymentCreate, PaymentMetadata
@@ -61,7 +61,11 @@ class PostgresPaymentProviderService(BasePostgresService):
         payment_providers = await super().get_all(dump_to_model=dump_to_model)
         return payment_providers
 
-    async def create(self, entity: PaymentProvider, dump_to_model: bool = True) -> dict | PaymentProvider:
+    async def create(
+        self,
+        entity: PaymentProviderCreate,
+        dump_to_model: bool = True
+    ) -> dict | PaymentProvider:
         payment_provider = await super().create(entity, dump_to_model)
         return payment_provider
 
@@ -212,7 +216,7 @@ class YooKassaPaymentProvider(AbstractProvider, AbstractProviderMixin):
         return builder.build()
 
 
-async def get_payment_provider_service(
+async def get_abstract_payment_provider_service(
         session: DatabaseSession,
         params: SubscriptionPayLinkCreate = Depends(),
         payment_service: PaymentService = Depends(get_payment_service),
@@ -224,6 +228,13 @@ async def get_payment_provider_service(
     return provider(payment_service, plan_service)
 
 
+async def get_payment_provider_service(session: DatabaseSession) -> PostgresPaymentProviderService:
+    return PostgresPaymentProviderService(session)
+
+
 PaymentProviderService = Annotated[
+    PostgresPaymentProviderService, Depends(get_abstract_payment_provider_service)
+]
+PostgresPaymentProviderService = Annotated[
     PostgresPaymentProviderService, Depends(get_payment_provider_service)
 ]
