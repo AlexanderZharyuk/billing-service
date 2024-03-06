@@ -47,7 +47,9 @@ class Payment(Base, TimeStampedMixin, table=True):
     subscription: "Subscription" = Relationship(back_populates="payments")
     subscription_id: int = Field(foreign_key="subscriptions.id", nullable=True)
     payment_provider_id: int = Field(foreign_key="payment_providers.id")
-    payment_provider: "PaymentProvider" = Relationship(back_populates="payments")
+    payment_provider: "PaymentProvider" = Relationship(
+        back_populates="payments", sa_relationship_kwargs={"lazy": "selectin"}
+    )
     payment_method: PaymentMethodsEnum = Field(
         default=None, sa_column=Column(SQLModelEnum(PaymentMethodsEnum))
     )

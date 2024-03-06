@@ -24,7 +24,6 @@ async def status_payment_yookassa(
 ) -> JSONResponse:
     notification_object = WebhookNotification(data)
     event = notification_object.event
-    print(event)
 
     match event:
         case "payment.succeeded":

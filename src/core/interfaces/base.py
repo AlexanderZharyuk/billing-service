@@ -78,3 +78,7 @@ class AbstractProvider(ABC):
     @abstractmethod
     async def generate_pay_link(self, params: SubscriptionPayLinkCreate) -> dict:
         """Create pay link for user."""
+
+    @abstractmethod
+    async def make_refund(self, params: BaseModel) -> dict:
+        """Send refund to provider."""

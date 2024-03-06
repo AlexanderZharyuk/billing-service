@@ -7,7 +7,7 @@ from typing import Any, Annotated, AsyncGenerator, Type
 from pydantic import BaseModel
 from requests.exceptions import HTTPError
 from fastapi import Depends
-from yookassa import Configuration, Payment
+from yookassa import Configuration, Payment, Refund
 from yookassa.domain.common.confirmation_type import ConfirmationType
 from yookassa.domain.request.payment_request_builder import PaymentRequestBuilder
 
@@ -16,7 +16,8 @@ from src.core.interfaces.database import BasePostgresService
 from src.core.interfaces.base import AbstractProvider
 from src.core.config import settings
 from src.db.postgres import DatabaseSession
-from src.v1.payment_providers.models import PaymentProvider, PaymentProviderUpdate
+from src.v1.payment_providers.models import PaymentProvider, PaymentProviderUpdate, \
+    PaymentProviderRefundParams
 from src.v1.payments.service import PaymentService, get_payment_service
 from src.v1.subscriptions.models import SubscriptionPayLinkCreate
 from src.v1.payments.models import PaymentCreate, PaymentMetadata
@@ -175,6 +176,18 @@ class YooKassaPaymentProvider(AbstractProvider, AbstractProviderMixin):
 
         await self.payment_service.get_or_create(payment)
         return pay_link
+
+    async def make_refund(self, params: PaymentProviderRefundParams) -> dict:
+        data = {
+            "amount": {
+                "value": params.amount,
+                "currency": params.currency.value
+            },
+            "payment_id": params.payment_id
+        }
+        task = await asyncio.gather(self.create(Refund, data))
+        refund, *_ = task
+        return {"operation": refund.status}
 
     @staticmethod
     async def build_payment(

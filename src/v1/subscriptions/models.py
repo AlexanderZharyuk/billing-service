@@ -8,12 +8,12 @@ from uuid import UUID
 
 from sqlalchemy import DateTime
 from sqlmodel import SQLModel, Field, Relationship, Column, Enum as SQLModelEnum
-from src.v1.payments.models import PaymentMethodsEnum
 from src.models import CurrencyEnum, BaseResponseBody, Base, TimeStampedMixin
 
 if TYPE_CHECKING:
     from src.v1.plans.models import Plan
     from src.v1.payments.models import Payment
+    from src.v1.refunds.models import Refund
 
 
 class DurationUnitEnum(str, Enum):
@@ -72,6 +72,9 @@ class Subscription(Base, TimeStampedMixin, table=True):
         back_populates="subscriptions", sa_relationship_kwargs={"lazy": "selectin"}
     )
     payments: List["Payment"] = Relationship(
+        back_populates="subscription", sa_relationship_kwargs={"lazy": "selectin"}
+    )
+    refunds: List["Refund"] = Relationship(
         back_populates="subscription", sa_relationship_kwargs={"lazy": "selectin"}
     )
 

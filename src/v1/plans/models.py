@@ -68,7 +68,7 @@ class Plan(Base, TimeStampedMixin, table=True):
         prices = list(filter(lambda x: x.currency == currency, self.prices))
         if not prices:
             raise PlanPriceNotFoundError
-        price, *_ = list(filter(lambda x: x.currency == currency, self.prices))
+        price, *_ = prices
         return price.amount
 
     def __repr__(self) -> str:

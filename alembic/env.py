@@ -16,6 +16,7 @@ from src.v1.payment_providers.models import PaymentProvider
 from src.v1.plans.models import Plan
 from src.v1.subscriptions.models import Subscription
 from src.v1.prices.models import Price
+from src.v1.refunds.models import Refund, RefundReason
 from src.models import Base
 
 target_metadata = Base.metadata
