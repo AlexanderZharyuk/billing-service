@@ -1,26 +1,26 @@
 import logging
-
 from contextlib import asynccontextmanager
 
 import uvicorn
-
 from fastapi import APIRouter, FastAPI
 from fastapi.responses import ORJSONResponse
-
+from redis.asyncio import Redis
+from redis.backoff import ExponentialBackoff
+from redis.exceptions import BusyLoadingError, ConnectionError, TimeoutError
+from redis.retry import Retry
 import src.constants as const
 from src.core.config import LOGGING, settings
-from src.db import postgres
+from src.db import postgres, redis
 from src.models import BaseExceptionBody
+from src.v1.admin import router as admin_router
 from src.v1.features.routers import router as features_router
 from src.v1.healthcheck.routers import router as healthcheck_router
+from src.v1.payments.routers import router as payment_router
 from src.v1.plans.routers import router as plan_router
 from src.v1.prices.routers import router as prices_router
-from src.v1.admin import router as admin_router
-from src.v1.subscriptions.routers import router as subscription_router
-from src.v1.payments.routers import router as payment_router
-from src.v1.webhooks.routers import router as webhooks_router
 from src.v1.refunds.routers import router as refund_router
-
+from src.v1.subscriptions.routers import router as subscription_router
+from src.v1.webhooks.routers import router as webhooks_router
 
 v1_router = APIRouter(
     prefix="/api/v1",
@@ -43,7 +43,20 @@ v1_router.include_router(healthcheck_router)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    redis.cache_provider = redis.RedisStorage(
+        client=Redis(
+            host=settings.redis_host,
+            port=settings.redis_port,
+            db=settings.redis_db,
+            retry=Retry(
+                ExponentialBackoff(cap=10, base=0.1),
+                retries=5,
+            ),
+            retry_on_error=[BusyLoadingError, ConnectionError, TimeoutError],
+        )
+    )
     yield
+    await redis.cache_provider.close()
     await postgres.db_provider.close()
 
 
