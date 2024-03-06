@@ -16,14 +16,11 @@ logger = logging.getLogger(__name__)
 
 
 class BasePostgresService(AbstractService):
-
     @property
     def model(self):
         """Get entity model"""
         if not hasattr(self, "_model"):
-            raise NotImplementedError(
-                "The required attribute `model` not representing"
-            )
+            raise NotImplementedError("The required attribute `model` not representing")
         return self._model
 
     @property
@@ -47,9 +44,7 @@ class BasePostgresService(AbstractService):
         return result if dump_to_model else result.model_dump()
 
     async def get_one_by_filter(
-        self,
-        filter_: dict | tuple,
-        dump_to_model: bool = True
+        self, filter_: dict | tuple, dump_to_model: bool = True
     ) -> dict | BaseModel:
         if isinstance(filter_, dict):
             filter_ = self._build_filter(filter_)
@@ -71,9 +66,7 @@ class BasePostgresService(AbstractService):
         return entity if dump_to_model else entity.model_dump()
 
     async def get_all(
-        self,
-        filter_: dict | tuple | None = None,
-        dump_to_model: bool = True
+        self, filter_: dict | tuple | None = None, dump_to_model: bool = True
     ) -> list[dict] | list[BaseModel]:
         statement = select(self.model)
 
@@ -87,11 +80,14 @@ class BasePostgresService(AbstractService):
         return entities if dump_to_model else [entity.model_dump() for entity in entities]
 
     @rollback_transaction(method="CREATE")
-    async def create(self, entity: BaseModel, dump_to_model: bool = True) -> dict | BaseModel:
+    async def create(
+        self, entity: BaseModel, dump_to_model: bool = True, commit: bool = True
+    ) -> dict | BaseModel:
         model_to_save = self.model(**entity.model_dump())
         self.session.add(model_to_save)
-        await self.session.commit()
-        await self.session.flush(model_to_save)
+        if commit:
+            await self.session.commit()
+            await self.session.flush(model_to_save)
         return model_to_save if dump_to_model else model_to_save.model_dump()
 
     def _build_filter(self, filter_params: dict) -> list:
@@ -109,17 +105,15 @@ class BasePostgresService(AbstractService):
 
     @rollback_transaction(method="UPDATE")
     async def update(
-        self,
-        entity_id: str,
-        data: BaseModel,
-        dump_to_model: bool = True
+        self, entity_id: str, data: BaseModel, dump_to_model: bool = True, commit: bool = True
     ) -> dict | BaseModel:
         entity = await self.get(entity_id)
         for attribute, value in data.model_dump(exclude_none=True).items():
             if hasattr(entity, attribute):
                 setattr(entity, attribute, value)
-        await self.session.commit()
-        await self.session.flush(entity)
+        if commit:
+            await self.session.commit()
+            await self.session.flush(entity)
 
         return entity if dump_to_model else entity.model_dump()
 
