@@ -111,10 +111,10 @@ class SubscriptionService(BasePostgresService):
         if not subscription:
             raise EntityNotFoundError(message="Subscription not found")
 
-        if subscription.status == SubscriptionStatusEnum.DELETED:
+        if subscription.status == SubscriptionStatusEnum.CANCELED:
             raise SubscriptionAlreadyDeletedError
 
-        subscription.status = SubscriptionStatusEnum.DELETED
+        subscription.status = SubscriptionStatusEnum.CANCELED
         await self.session.commit()
         logger.debug(
             "Отменена подписка в БД. ID подписки %s, ID пользователя %s",

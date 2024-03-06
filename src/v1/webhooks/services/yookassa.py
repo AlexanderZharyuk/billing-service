@@ -57,7 +57,7 @@ class YooKassaWebhookService:
             {"external_payment_id": notification_data.object.payment_id}
         )
         subscription_data = SubscriptionUpdate(
-            status=SubscriptionStatusEnum.DELETED,
+            status=SubscriptionStatusEnum.CANCELED,
             ended_at=datetime.utcnow()
         )
         await self.subscription_service.update(payment.subscription_id, subscription_data)
