@@ -123,6 +123,21 @@ class SubscriptionService(BasePostgresService):
         )
         return subscription if dump_to_model else subscription.model_dump()
 
+    async def get_active_subscription(
+        self,
+        user_id: str,
+        dump_to_model: bool = True
+    ) -> dict | Subscription:
+        subscription = await self.get_one_by_filter(
+            filter_={"status": SubscriptionStatusEnum.ACTIVE, "user_id": user_id},
+            dump_to_model=dump_to_model,
+            raise_on_error=True
+        )
+        if not subscription:
+            raise EntityNotFoundError(message="Subscription not found")
+
+        return subscription if dump_to_model else subscription.model_dump()
+
 
 def get_subscription_service(
     session: DatabaseSession,

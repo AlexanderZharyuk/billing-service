@@ -40,13 +40,9 @@ async def verify_and_get_user(token: str) -> User | None:
     return User(**user)
 
 
-async def get_current_user(
-    user_id: str | int, token: str | None = Depends(cookie_scheme)
-) -> dict | None:
+async def get_current_user(token: str | None = Depends(cookie_scheme)) -> dict | None:
     """Get current user"""
     user = await verify_and_get_user(token)
-    if user_id != str(user.id):
-        raise EntityNotFoundError
     return user
 
 

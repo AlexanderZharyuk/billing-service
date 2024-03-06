@@ -48,7 +48,7 @@ class Subscription(Base, TimeStampedMixin, table=True):
         primary_key=True,
         schema_extra={"examples": [5]},
     )
-    user_id: UUID = Field(
+    user_id: str = Field(
         index=True,
         schema_extra={"examples": [uuid.uuid4()]},
     )
@@ -98,15 +98,15 @@ class SubscriptionPayLinkCreate(SQLModel):
     plan_id: int
     payment_provider_id: int
     currency: CurrencyEnum
-    user_id: UUID | int
+    user_id: UUID | int | str
     return_url: str
 
 
 class SubscriptionCreate(SQLModel):
-    user_id: Optional[UUID] = Field(default=None)
+    user_id: UUID | str = Field(default=None)
     status: SubscriptionStatusEnum
-    started_at: Optional[datetime] = Field(default_factory=datetime.utcnow)
-    ended_at: Optional[datetime] = Field(default=None)
+    started_at: datetime = Field(default_factory=datetime.utcnow)
+    ended_at: datetime = Field(default=None)
     plan_id: int
 
 
@@ -117,7 +117,7 @@ class SubscriptionPause(SQLModel):
 
 class SubscriptionUpdate(SQLModel):
     status: SubscriptionStatusEnum = Field(default=SubscriptionStatusEnum.PAUSED)
-    ended_at: Optional[datetime] = Field(default=None)
+    ended_at: datetime | None = Field(default=None)
 
 
 class SingleSubscriptionResponse(BaseResponseBody):
