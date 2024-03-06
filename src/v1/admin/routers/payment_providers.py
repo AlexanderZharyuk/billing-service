@@ -1,7 +1,4 @@
-from typing import Annotated
-
-from fastapi import APIRouter, Path, status
-from pydantic import UUID4
+from fastapi import APIRouter, status
 
 from src.v1.payment_providers.models import (
     PaymentProviderCreate, SinglePaymentProviderResponse

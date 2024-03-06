@@ -7,7 +7,7 @@ from src.core.interfaces.base import AbstractProvider
 from src.core.interfaces.database import BasePostgresService
 from src.db.postgres import DatabaseSession
 from src.v1.payment_providers.models import PaymentProviderRefundParams
-from src.v1.payment_providers.service import PostgresPaymentProviderService, AbstractProviderMixin
+from src.v1.payment_providers.service import AbstractProviderMixin
 from src.v1.payments.service import PaymentService, get_payment_service
 from src.v1.plans.service import PlanService, get_plan_service
 from src.v1.refunds.models import (
@@ -102,7 +102,11 @@ class RefundService(BasePostgresService):
         refunds = await super().get_all(filter_, dump_to_model)
         return refunds
 
-    async def create(self, entity: RefundCreate, dump_to_model: bool = True) -> dict | RefundCreate:
+    async def create(
+        self,
+        entity: RefundCreate,
+        dump_to_model: bool = True
+    ) -> dict | RefundCreate:
         await self.refund_reasons_service.get(entity.reason_id)
         await self.subscription_service.get_one_by_filter(
             {"id": entity.subscription_id, "status": SubscriptionStatusEnum.ACTIVE},

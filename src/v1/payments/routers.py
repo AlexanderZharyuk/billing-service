@@ -3,13 +3,15 @@ from typing import Annotated
 
 from fastapi import APIRouter, status, Depends, Path
 
-from src.dependencies import get_current_user, is_admin
+from src.dependencies import get_current_user
 from src.models import User
 from src.v1.payments.models import (
     SinglePaymentResponse,
     SeveralPaymentsResponse,
 )
 from src.v1.payments.service import PostgresPaymentService
+from src.v1.subscriptions.service import PostgresSubscriptionService
+from src.core.exceptions import EntityNotFoundError
 
 router = APIRouter(prefix="/payments", tags=["Payments"])
 logger = logging.getLogger(__name__)
@@ -25,14 +27,13 @@ logger = logging.getLogger(__name__)
 async def get_payment(
     payment_id: Annotated[int, Path(examples=[1])],
     service: PostgresPaymentService = PostgresPaymentService,
-    current_user: User = Depends(get_current_user),
+    user: User = Depends(get_current_user),
 ) -> SinglePaymentResponse:
-    if is_admin(current_user):
-        payment = await service.get(payment_id)
-    else:
-        payment = await service.get_one_by_filter(
-            filter_={"id": payment_id, "user_id": current_user.id}
-        )
+    payment = await service.get(payment_id)
+    if not payment.subscription:
+        raise EntityNotFoundError
+    if payment.subscription.user_id != str(user.id):
+        raise EntityNotFoundError
     return SinglePaymentResponse(data=payment)
 
 
@@ -45,11 +46,11 @@ async def get_payment(
     name="payments",
 )
 async def get_payments(
-    service: PostgresPaymentService = PostgresPaymentService,
-    current_user: User = Depends(get_current_user),
+    service: PostgresSubscriptionService = PostgresSubscriptionService,
+    user: User = Depends(get_current_user),
 ) -> SeveralPaymentsResponse:
-    if is_admin(current_user):
-        payments = await service.get_all()
-    else:
-        payments = await service.get_all(filter_={"user_id": current_user.id})
+    subscriptions = await service.get_all(filter_={"user_id": str(user.id)})
+    payments = []
+    for subscription in subscriptions:
+        payments.extend(subscription.payments)
     return SeveralPaymentsResponse(data=payments)
