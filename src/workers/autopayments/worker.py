@@ -7,37 +7,40 @@ from yookassa.domain.response import PaymentResponse
 
 from src.core.exceptions import InvalidParamsError
 from src.core.helpers import rollback_transaction
-from src.core.interfaces import BasePostgresService, TypeProvider, get_provider_from_user_choice
+from src.core.interfaces.database import BasePostgresService
 from src.v1.features.models import Feature
 from src.v1.payment_providers.models import PaymentProvider
-from src.v1.payment_providers.service import get_payment_provider_service
-from src.v1.payments.models import Payment, PaymentCreate, PaymentStatusEnum
+from src.v1.payment_providers.service import TypeProvider, AbstractProviderMixin, get_payment_provider_service
+from src.v1.payments.models import Payment, PaymentCreate, PaymentStatusEnum, PaymentUpdate
 from src.v1.payments.service import get_payment_service
-from src.v1.plans.models import DurationUnitEnum, Plan
+from src.v1.plans.models import Plan
 from src.v1.plans.service import get_plan_service
 from src.v1.prices.models import Price
 from src.v1.prices.service import get_price_service
-from src.v1.subscriptions.models import Subscription, SubscriptionStatusEnum, SubscriptionUpdate
+from src.v1.refunds.models import Refund, RefundReason
+from src.v1.subscriptions.models import DurationUnitEnum, Subscription, SubscriptionStatusEnum, SubscriptionUpdate
 from src.v1.subscriptions.service import get_subscription_service
 from src.workers.autopayments import logger
 
 
 class AutopaymentsWorker(BasePostgresService):
-    def __init__(self, session: AsyncSession = None, type_provider=TypeProvider.YOOKASSA):
+    def __init__(self, session: AsyncSession = None, type_provider=TypeProvider.YOOKASSA.value):
         self._model = Payment
         self._session = session
-        self.provider = get_provider_from_user_choice(type_provider=type_provider)
+        get_provider = AbstractProviderMixin.get_provider(provider_name=type_provider)
+        self.payment_provider_service = get_payment_provider_service(session=session)
         self.plan_service = get_plan_service(session=session)
         self.price_service = get_price_service(session=session)
-        self.payment_provider_service = get_payment_provider_service(session=session)
         self.payment_service = get_payment_service(
             session=session,
             plan_service=self.plan_service,
-            payment_provider_service=self.payment_provider_service,
         )
-        self.subscription_service = get_subscription_service(
-            session=session, payment_service=self.payment_service, plan_service=self.plan_service
+        self.subscriptions_service = get_subscription_service(
+            session=session,
+            payment_service=self.payment_provider_service,
+            plan_service=self.plan_service,
         )
+        self.provider = get_provider(self.payment_service, self.plan_service)
         self.type_object = yoPayment
         self.date_now = datetime.combine(datetime.utcnow(), time.max)
 
@@ -45,8 +48,10 @@ class AutopaymentsWorker(BasePostgresService):
         subscriptions = await self.get_subscriptions()
         if not subscriptions:
             logger.info("No subscriptions in need of auto-renewal were found.")
+            return
         for subscription in subscriptions:
-            payment = await super().get(entity_id=subscription.payment_id)
+            payment = await super().get_all(filter_=(Payment.subscription_id == subscription.id,))
+            payment = payment[0]
             external_payment_id = payment.external_payment_id
             price = await self.price_service.get_one_by_filter(
                 filter_={"plan_id": subscription.plan_id}
@@ -63,7 +68,6 @@ class AutopaymentsWorker(BasePostgresService):
             payment_create = await super().create(
                 entity=PaymentCreate(
                     payment_provider_id=payment.payment_provider_id,
-                    payment_method=payment.payment_method,
                     status=PaymentStatusEnum.SUCCEEDED,
                     currency=external_payment.amount.currency,
                     amount=external_payment.amount.value,
@@ -71,11 +75,14 @@ class AutopaymentsWorker(BasePostgresService):
                 ),
                 commit=False,
             )
-            await self.subscription_service.update(
+            subscription_update = await self.subscriptions_service.update(
                 entity_id=subscription.id,
-                data=Subscription(status=SubscriptionStatusEnum.ACTIVE, ended_at=ended_at),
+                data=SubscriptionUpdate(status=SubscriptionStatusEnum.ACTIVE, ended_at=ended_at),
                 commit=False,
             )
+            await self.session.flush()
+            await super().update(entity_id=payment_create.id,
+                                         data=PaymentUpdate(subscription_id=subscription_update.id), commit=False)
             await self.session_commit()
             logger.info(f"A payment has been created with id {payment_create.id}.")
             logger.info(f"Subscriptions with {subscription.id} has been updated.")
@@ -88,7 +95,7 @@ class AutopaymentsWorker(BasePostgresService):
                 Subscription.status == SubscriptionStatusEnum.ACTIVE,
                 Subscription.ended_at <= self.date_now,
             )
-            subscriptions = await self.subscription_service.get_all(filter_=filter_)
+            subscriptions = await self.subscriptions_service.get_all(filter_=filter_)
             return subscriptions
         except AttributeError as error:
             logger.info(f"An error occurred when requesting payments from the database:{error}")
@@ -119,7 +126,7 @@ class AutopaymentsWorker(BasePostgresService):
         duration = plan.duration
         duration_unit = plan.duration_unit
         match duration_unit:
-            case DurationUnitEnum.DAY:
+            case DurationUnitEnum.DAYS:
                 return self.date_now + relativedelta(days=+duration)
             case DurationUnitEnum.MONTH:
                 return self.date_now + relativedelta(months=+duration)

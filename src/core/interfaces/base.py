@@ -1,12 +1,12 @@
 import logging
 
 from abc import ABC, abstractmethod
+from enum import Enum
 from typing import Any, AsyncGenerator
 
 from pydantic import BaseModel
 
 from src.v1.subscriptions.models import SubscriptionPayLinkCreate
-
 
 logger = logging.getLogger(__name__)
 
