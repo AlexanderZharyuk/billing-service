@@ -1,25 +1,29 @@
 import uuid
-from datetime import datetime
+
+from dateutil.relativedelta import relativedelta
+from datetime import datetime, timedelta
 from enum import Enum
 from typing import Optional, List, TYPE_CHECKING
 from uuid import UUID
 
 from sqlalchemy import DateTime
 from sqlmodel import SQLModel, Field, Relationship, Column, Enum as SQLModelEnum
-from src.v1.payments.models import PaymentMethodsEnum
 from src.models import CurrencyEnum, BaseResponseBody, Base, TimeStampedMixin
 
 if TYPE_CHECKING:
     from src.v1.plans.models import Plan
     from src.v1.payments.models import Payment
+    from src.v1.refunds.models import Refund
+
+
+class DurationUnitEnum(str, Enum):
+    DAYS = "days"
+    MONTH = "month"
+    YEAR = "year"
 
 
 class UserSubscriptionPauseEnum(str, Enum):
     PAUSED = "paused"
-
-
-class UserSubscriptionCancelEnum(str, Enum):
-    CANCELED = "cancelled"
 
 
 class SubscriptionStatusEnum(str, Enum):
@@ -28,6 +32,7 @@ class SubscriptionStatusEnum(str, Enum):
     EXPIRED = "expired"
     CANCELED = "cancelled"
     PAUSED = "paused"
+    DELETED = "deleted"
 
 
 class Subscription(Base, TimeStampedMixin, table=True):
@@ -66,22 +71,35 @@ class Subscription(Base, TimeStampedMixin, table=True):
     plan: "Plan" = Relationship(
         back_populates="subscriptions", sa_relationship_kwargs={"lazy": "selectin"}
     )
-    payment_id: int = Field(foreign_key="payments.id")
     payments: List["Payment"] = Relationship(
         back_populates="subscription", sa_relationship_kwargs={"lazy": "selectin"}
     )
+    refunds: List["Refund"] = Relationship(
+        back_populates="subscription", sa_relationship_kwargs={"lazy": "selectin"}
+    )
+
+    @classmethod
+    def get_end_time_delta(cls, linked_plan):
+        time_delta = 0
+        if linked_plan.duration_unit == DurationUnitEnum.DAYS.value:
+            time_delta = timedelta(days=linked_plan.duration)
+        elif linked_plan.duration_unit == DurationUnitEnum.MONTH.value:
+            time_delta = relativedelta(months=linked_plan.duration)
+        elif linked_plan.duration_unit == DurationUnitEnum.YEAR.value:
+            time_delta = relativedelta(years=linked_plan.duration)
+
+        return time_delta
 
     def __repr__(self) -> str:
         return f"Subscription(id={self.id!r}, name={self.name!r}, user_id={self.user_id!r})"
 
 
-class SubscriptionApiCreate(SQLModel):
+class SubscriptionPayLinkCreate(SQLModel):
     plan_id: int
     payment_provider_id: int
     currency: CurrencyEnum
-    payment_method: PaymentMethodsEnum
-    user_id: Optional[UUID] = Field(default=None)
-    return_url: Optional[str] = Field(default=None)
+    user_id: UUID | int
+    return_url: str
 
 
 class SubscriptionCreate(SQLModel):
@@ -90,7 +108,6 @@ class SubscriptionCreate(SQLModel):
     started_at: Optional[datetime] = Field(default_factory=datetime.utcnow)
     ended_at: Optional[datetime] = Field(default=None)
     plan_id: int
-    payment_id: int
 
 
 class SubscriptionPause(SQLModel):
@@ -101,10 +118,6 @@ class SubscriptionPause(SQLModel):
 class SubscriptionUpdate(SQLModel):
     status: SubscriptionStatusEnum = Field(default=SubscriptionStatusEnum.PAUSED)
     ended_at: Optional[datetime] = Field(default=None)
-
-
-class SubscriptionCancel(SQLModel):
-    status: UserSubscriptionCancelEnum = Field(default=UserSubscriptionCancelEnum.CANCELED)
 
 
 class SingleSubscriptionResponse(BaseResponseBody):

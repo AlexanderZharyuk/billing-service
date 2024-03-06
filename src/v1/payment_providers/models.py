@@ -1,8 +1,9 @@
+from decimal import Decimal
 from typing import Optional, List
 
 from sqlmodel import SQLModel, Field, Relationship
 
-from src.models import BaseResponseBody, Base
+from src.models import BaseResponseBody, Base, CurrencyEnum
 from src.models import TimeStampedMixin
 
 
@@ -55,3 +56,9 @@ class SinglePaymentProviderResponse(BaseResponseBody):
 
 class SeveralPaymentProvidersResponse(BaseResponseBody):
     data: list[PaymentProvider]
+
+
+class PaymentProviderRefundParams(SQLModel):
+    payment_id: str
+    amount: Decimal = Field(gt=0)
+    currency: CurrencyEnum
