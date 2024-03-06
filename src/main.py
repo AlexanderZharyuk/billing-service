@@ -18,7 +18,6 @@ from src.v1.healthcheck.routers import router as healthcheck_router
 from src.v1.payments.routers import router as payment_router
 from src.v1.plans.routers import router as plan_router
 from src.v1.prices.routers import router as prices_router
-from src.v1.refunds.routers import router as refund_router
 from src.v1.subscriptions.routers import router as subscription_router
 from src.v1.webhooks.routers import router as webhooks_router
 from src.v1.refunds.routers import router as refund_router
