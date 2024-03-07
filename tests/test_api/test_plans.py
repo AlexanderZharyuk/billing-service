@@ -1,9 +1,9 @@
 import pytest
 from starlette import status
 from httpx import AsyncClient
+from tests.utils.testing_data import test_data
 
-
-pytestmark = pytest.mark.anyio
+pytestmark = pytest.mark.asyncio
 
 admin_plans_url = "/api/v1/admin/plans/"
 plans_url = "/api/v1/plans/"
@@ -11,9 +11,10 @@ plans_url = "/api/v1/plans/"
 
 async def test_get_plan(http_client: AsyncClient):
     expected_data = "First Plan"
-    response = await http_client.get(plans_url)
+    response = await http_client.get(plans_url + "{id}", params={"plan_id": 1})
     assert response.status_code == status.HTTP_200_OK
-    assert response.json()["data"]["name"] == expected_data
+    data = response.json()
+    assert data["data"]["name"] == expected_data
 
 
 # # TODO нужна фикстура, добавляющая строку в таблицу

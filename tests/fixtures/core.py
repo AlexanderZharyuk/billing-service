@@ -5,7 +5,7 @@ from httpx import AsyncClient
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from src.core.config import settings
-from src.db.postgres import db_provider
+from src.db.postgres import db_provider, AsyncPostgresDatabaseProvider
 from src.main import app
 from src.models import Base
 from tests.utils.testing_data import test_data
@@ -13,6 +13,8 @@ from tests.utils.testing_data import test_data
 from src.v1.plans.models import Plan
 from src.v1.subscriptions.models import Subscription
 from src.v1.payments.models import Payment
+
+session = AsyncPostgresDatabaseProvider()
 
 data_mapping = {
     "plans": Plan,
@@ -55,7 +57,7 @@ async def db_engine():
     pg_dsn = f"{pg_connect_string}{settings.postgres_db}_test_db"
     await delete_database()
     await create_database()
-    engine = create_async_engine(pg_dsn, future=True, poolclass=NullPool)
+    engine = create_async_engine(pg_dsn, future=True)
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
         yield conn
@@ -75,12 +77,13 @@ async def insert_data(db: AsyncSession):
         for row in test_data[table]:
             db.add(model(**row))
     await db.commit()
-    result = await db.execute(text(f"SELECT * FROM plans"))
-    print(result.fetchall())
+            # await db.refresh(table)
+    # result = await db.execute(text(f"SELECT * FROM plans"))
+    # print(result.fetchall())
 
 
-@pytest_asyncio.fixture(scope="session")
-async def http_client(db: AsyncSession):
+@pytest_asyncio.fixture
+async def http_client(db: AsyncSession, insert_data):
     app.dependency_overrides[db_provider] = lambda: db
     client = AsyncClient(
         app=app,
