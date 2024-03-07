@@ -4,9 +4,11 @@ from fastapi import Depends
 from fastapi.security import APIKeyCookie, APIKeyHeader
 
 from src.core.config import settings
+from src.core.exceptions import EntityNotFoundError
 from src.constants import ENV
 from src.core.exceptions import ServiceError
 from src.models import User
+
 
 cookie_scheme = APIKeyCookie(name=settings.session_cookie_name, auto_error=False)
 header_scheme = APIKeyHeader(name=settings.external_service_token_name, auto_error=False)
@@ -40,7 +42,8 @@ async def verify_and_get_user(token: str) -> User | None:
 
 async def get_current_user(token: str | None = Depends(cookie_scheme)) -> dict | None:
     """Get current user"""
-    return await verify_and_get_user(token)
+    user = await verify_and_get_user(token)
+    return user
 
 
 def is_admin(user: User) -> bool:

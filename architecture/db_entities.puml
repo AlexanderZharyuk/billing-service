@@ -1,0 +1,78 @@
+@startuml
+' hide the spot
+' hide circle
+skinparam linetype ortho
+
+entity "Subscriptions" as subscription {
+  *id: int <<PK>>
+  --
+  *plan_id: int <<FK>>
+  *user_id: UUID
+  *status: text
+  *started_at: datetime
+  *ended_at: datetime
+  *created_at: datetime
+  *updated_at: datetime
+}
+
+entity "Plans" as plan {
+  *id : int <<PK>>
+  --
+  *name: text
+  *description: text
+  *is_active: bool
+  *is_recurring: bool
+  *created_at: datetime
+  *updated_at: datetime
+  *duration: int
+  *duration_unit: int
+  *price_per_unit: decimal
+}
+
+
+entity "Payments" as payment {
+  *id: int <<PK>>
+  --
+  *invoice_id: int <<FK>>
+  *provider_id: int <<FK>>
+  *status: text
+  *amount: decimal
+  *currency: text
+  *created_at: datetime
+  *updated_at: datetime
+}
+
+
+entity "PaymentProviders" as provider {
+  *id : int <<PK>>
+  --
+  *name: text
+  *description: text
+  *is_active: bool
+  *created_at: datetime
+  *updated_at: datetime
+}
+
+
+entity "Features" as feature{
+  *id: int <<PK>>
+  --
+  *name: text
+  *description: text
+  *created_at: datetime
+  *updated_at: datetime
+  *available_entities: jsonb
+}
+
+
+entity "PlansToFeaturesLink" as plan_features {
+  *plan_id: int <<FK>>
+  *feature_id: int <<FK>>
+}
+
+payment }|-up-|| subscription
+subscription }|-up-|| plan
+payment }|-left-|| provider
+plan ||-left-|{ plan_features
+plan_features }|-left-|| feature
+@enduml

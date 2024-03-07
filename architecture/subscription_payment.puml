@@ -1,0 +1,22 @@
+@startuml
+participant Client          as user
+participant Billing         as service
+database    Database        as db 
+participant PaymentHelper   as worker
+participant PaymentProvider as pp
+
+
+user -> service: Инициирует обновление подписки из ЛК (фронт)
+service -> db: - Обновляет объект **Subscription** \n- Создает объект **Invoice**
+service -> pp: (POST) Создает платеж
+pp -[#blue]> service: pending-статус платежа
+service -> db: Создает объект **Payment** \nсо статусом pending
+service -> user: Передает URL для оплаты
+user -> pp: подтверждает оплату (вводит данные)
+pp -[#green]> service: paid-статус платежа
+pp -[#green]> user: Отдает URL для возврата в ЛК
+service -> user: Отдает информацию, что платеж прошел, и как только он будет подтвержден со стороны pp, это отразится в ЛК пользователя
+worker -> pp: Запрашивает статус платежа в случае если нет информации от pp
+worker -> service: Обновляет статус платежа
+service -> db: Обновляет объект **Payment** \nсо статусом <font color=green>paid</font>
+@enduml

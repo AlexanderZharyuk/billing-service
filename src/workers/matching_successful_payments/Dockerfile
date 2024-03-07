@@ -1,10 +1,10 @@
 FROM python:3.10-alpine
 
-WORKDIR /opt/matching_successful_payments/
+WORKDIR /opt
+
 COPY ./ ./
+COPY .env-example .env
 
-RUN python3 setup.py sdist bdist_wheel
-RUN pip install dist/*.whl
+RUN pip install --upgrade pip && pip install -r requirements.txt
 
-RUN chmod +x docker-entrypoint.sh
-CMD ["./docker-entrypoint.sh"]
+CMD ["python3", "-m", "src.workers.matching_successful_payments.main"]

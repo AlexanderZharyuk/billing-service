@@ -4,7 +4,7 @@ from pydantic import BaseModel
 from fastapi import Depends
 
 from src.core.exceptions import EntityNotFoundError
-from src.core.interfaces import BasePostgresService
+from src.core.interfaces.database import BasePostgresService
 from src.db.postgres import DatabaseSession
 from src.v1.prices.models import Price, PriceUpdate
 

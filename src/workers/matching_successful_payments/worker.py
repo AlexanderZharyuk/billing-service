@@ -2,15 +2,14 @@ from datetime import timedelta
 
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from src.core.interfaces import TypeProvider
-from src.v1.payments.models import (Payment, PaymentCreate, PaymentMetadata,
-                                    PaymentStatusEnum)
+from src.v1.payment_providers.service import TypeProvider
+from src.v1.payments.models import Payment, PaymentCreate, PaymentMetadata, PaymentStatusEnum, PaymentUpdate
 from src.workers.interfaces import BasePaymentMatchingWorker
 from src.workers.matching_successful_payments import logger
 
 
 class MatchingSuccessPayments(BasePaymentMatchingWorker):
-    def __init__(self, session: AsyncSession = None, type_provider=TypeProvider.YOOKASSA):
+    def __init__(self, session: AsyncSession = None, type_provider=TypeProvider.YOOKASSA.value):
         super().__init__(session, type_provider)
         self.payment_status = PaymentStatusEnum.SUCCEEDED.value
         self.early_date = self.date_now - timedelta(hours=1)
@@ -37,15 +36,17 @@ class MatchingSuccessPayments(BasePaymentMatchingWorker):
             payment_metadata = PaymentMetadata(**object_.metadata)
             payment = PaymentCreate(
                 payment_provider_id=payment_metadata.payment_provider_id,
-                payment_method=object_.payment_method.type,
                 status=self.payment_status,
                 currency=object_.amount.currency,
                 amount=object_.amount.value,
-                external_payment_id=object_.id,
+                external_payment_id=object_.id
             )
-            create_payment = await super().create(entity=payment)
-            logger.info(f"A payment has been created with id {create_payment.id}.")
+            payment_create = await super().create(entity=payment, commit=False)
             subscription_create = await super().create_subscription(
-                metadata=payment_metadata, payment=create_payment
+                metadata=payment_metadata, commit=False
             )
+            await self.session.flush()
+            await super().update_payment(entity_id=payment_create.id, data=PaymentUpdate(subscription_id=subscription_create.id), commit=False)
+            await super().session_commit()
+            logger.info(f"A payment has been created with id {payment_create.id}.")
             logger.info(f"A subscription has been created with id {subscription_create.id}.")
