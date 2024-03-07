@@ -56,7 +56,10 @@ class SubscriptionService(BasePostgresService):
         return subscriptions
 
     async def create(
-        self, entity: SubscriptionCreate, dump_to_model: bool = True
+        self,
+        entity: SubscriptionCreate,
+        dump_to_model: bool = True,
+        commit: bool = True,
     ) -> dict | Subscription:
         plan = await self.plan_service.get_one_by_filter(
             filter_={"id": int(entity.plan_id), "is_active": True}
@@ -67,12 +70,13 @@ class SubscriptionService(BasePostgresService):
         ended_date = entity.started_at + Subscription.get_end_time_delta(plan)
         entity.ended_at = ended_date
         subscription = await super().create(entity)
-        logger.debug(
-            "Создана подписка в БД. ID подписки %s, ID плана %s, ID пользователя %s",
-            subscription.id,
-            subscription.plan_id,
-            subscription.user_id,
-        )
+        if commit:
+            logger.debug(
+                "Создана подписка в БД. ID подписки %s, ID плана %s, ID пользователя %s",
+                subscription.id,
+                subscription.plan_id,
+                subscription.user_id,
+            )
         return subscription if dump_to_model else subscription.model_dump()
 
     async def pause(
@@ -95,15 +99,17 @@ class SubscriptionService(BasePostgresService):
         entity_id: str,
         data: SubscriptionUpdate,
         dump_to_model: bool = True,
+        commit: bool = True
     ) -> dict | Subscription:
-        updated_subscription = await super().update(entity_id, data, dump_to_model)
-        logger.debug(
-            "Изменена подписка в БД. ID подписки %s, ID пользователя %s, статус %s, дата окончания %s",
-            updated_subscription.id,
-            updated_subscription.user_id,
-            updated_subscription.status,
-            updated_subscription.ended_at,
-        )
+        updated_subscription = await super().update(entity_id=entity_id, data=data, dump_to_model=dump_to_model, commit=commit)
+        if commit:
+            logger.debug(
+                "Изменена подписка в БД. ID подписки %s, ID пользователя %s, статус %s, дата окончания %s",
+                updated_subscription.id,
+                updated_subscription.user_id,
+                updated_subscription.status,
+                updated_subscription.ended_at,
+            )
         return updated_subscription
 
     async def delete(self, entity_id: Any, dump_to_model: bool = True) -> dict | Subscription:
