@@ -3,9 +3,8 @@ import aiohttp
 from fastapi import Depends
 from fastapi.security import APIKeyCookie, APIKeyHeader
 
-from src.core.config import settings
-from src.core.exceptions import EntityNotFoundError
 from src.constants import ENV
+from src.core.config import settings
 from src.core.exceptions import ServiceError
 from src.models import User
 
