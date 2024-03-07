@@ -75,7 +75,6 @@ class PaymentCreate(SQLModel):
     currency: CurrencyEnum
     amount: Decimal = Field(max_digits=8, decimal_places=2)
     external_payment_id: str = None
-    external_payment_type_id: str = None
 
 
 class PaymentUpdate(SQLModel):

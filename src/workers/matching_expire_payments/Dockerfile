@@ -7,4 +7,4 @@ COPY .env-example .env
 
 RUN pip install --upgrade pip && pip install -r requirements.txt
 
-CMD ["python3", "-m", "src.workers.matching_successful_payments.main"]
+CMD ["python3", "-m", "src.workers.matching_expire_payments.main"]
