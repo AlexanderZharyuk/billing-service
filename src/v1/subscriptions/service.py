@@ -69,7 +69,7 @@ class SubscriptionService(BasePostgresService):
 
         ended_date = entity.started_at + Subscription.get_end_time_delta(plan)
         entity.ended_at = ended_date
-        subscription = await super().create(entity=entity, commit=commit)
+        subscription = await super().create(entity)
         if commit:
             logger.debug(
                 "Создана подписка в БД. ID подписки %s, ID плана %s, ID пользователя %s",
@@ -117,16 +117,31 @@ class SubscriptionService(BasePostgresService):
         if not subscription:
             raise EntityNotFoundError(message="Subscription not found")
 
-        if subscription.status == SubscriptionStatusEnum.DELETED:
+        if subscription.status == SubscriptionStatusEnum.CANCELED:
             raise SubscriptionAlreadyDeletedError
 
-        subscription.status = SubscriptionStatusEnum.DELETED
+        subscription.status = SubscriptionStatusEnum.CANCELED
         await self.session.commit()
         logger.debug(
             "Отменена подписка в БД. ID подписки %s, ID пользователя %s",
             subscription.id,
             subscription.user_id,
         )
+        return subscription if dump_to_model else subscription.model_dump()
+
+    async def get_active_subscription(
+        self,
+        user_id: str,
+        dump_to_model: bool = True
+    ) -> dict | Subscription:
+        subscription = await self.get_one_by_filter(
+            filter_={"status": SubscriptionStatusEnum.ACTIVE, "user_id": user_id},
+            dump_to_model=dump_to_model,
+            raise_on_error=True
+        )
+        if not subscription:
+            raise EntityNotFoundError(message="Subscription not found")
+
         return subscription if dump_to_model else subscription.model_dump()
 
 

@@ -1,40 +1,52 @@
 import logging
 
 from abc import ABC, abstractmethod
-from enum import Enum
 from typing import Any, AsyncGenerator
 
 from pydantic import BaseModel
 
 from src.v1.subscriptions.models import SubscriptionPayLinkCreate
 
+
 logger = logging.getLogger(__name__)
 
 
 class AbstractService(ABC):
+
     @abstractmethod
     async def get(self, entity_id: Any, dump_to_model: bool = True) -> dict | BaseModel:
         """Returns entity by id."""
 
     @abstractmethod
     async def get_one_by_filter(
-        self, filter_: Any, dump_to_model: bool = True
+        self,
+        filter_: Any,
+        dump_to_model: bool = True
     ) -> dict | BaseModel:
         """Returns entity by custom filter."""
 
     @abstractmethod
     async def get_all(
-        self, filter_: dict | tuple | None = None, dump_to_model: bool = True
+        self,
+        filter_: dict | tuple | None = None,
+        dump_to_model: bool = True
     ) -> list[dict] | list[BaseModel]:
         """Returns list of entities by filter."""
 
     @abstractmethod
-    async def create(self, entity: BaseModel, dump_to_model: bool = True) -> dict | BaseModel:
+    async def create(
+        self,
+        entity: BaseModel,
+        dump_to_model: bool = True
+    ) -> dict | BaseModel:
         """Creates entity."""
 
     @abstractmethod
     async def update(
-        self, entity_id: str, data: BaseModel, dump_to_model: bool = True
+        self,
+        entity_id: str,
+        data: BaseModel,
+        dump_to_model: bool = True
     ) -> dict | BaseModel:
         """Updates entity."""
 

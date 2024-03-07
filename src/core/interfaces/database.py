@@ -16,11 +16,14 @@ logger = logging.getLogger(__name__)
 
 
 class BasePostgresService(AbstractService):
+
     @property
     def model(self):
         """Get entity model"""
         if not hasattr(self, "_model"):
-            raise NotImplementedError("The required attribute `model` not representing")
+            raise NotImplementedError(
+                "The required attribute `model` not representing"
+            )
         return self._model
 
     @property
@@ -44,7 +47,9 @@ class BasePostgresService(AbstractService):
         return result if dump_to_model else result.model_dump()
 
     async def get_one_by_filter(
-        self, filter_: dict | tuple, dump_to_model: bool = True
+        self,
+        filter_: dict | tuple,
+        dump_to_model: bool = True
     ) -> dict | BaseModel:
         if isinstance(filter_, dict):
             filter_ = self._build_filter(filter_)
@@ -66,7 +71,9 @@ class BasePostgresService(AbstractService):
         return entity if dump_to_model else entity.model_dump()
 
     async def get_all(
-        self, filter_: dict | tuple | None = None, dump_to_model: bool = True
+        self,
+        filter_: dict | tuple | None = None,
+        dump_to_model: bool = True
     ) -> list[dict] | list[BaseModel]:
         statement = select(self.model)
 
