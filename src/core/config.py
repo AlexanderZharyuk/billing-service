@@ -43,6 +43,11 @@ class Settings(BaseSettings):
 
     debug: bool = False
 
+    redis_host: str = "localhost"
+    redis_port: int = 6379
+    redis_db: int = 0
+    idempotency_key_ttl_secs: int = 1200
+
     @cached_property
     def pg_dsn(self):
         return (

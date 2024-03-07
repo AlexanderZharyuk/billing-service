@@ -1,5 +1,6 @@
 import logging
 import asyncio
+import uuid
 
 from enum import Enum
 from typing import Any, Annotated, AsyncGenerator, Type
@@ -16,6 +17,8 @@ from src.core.interfaces.database import BasePostgresService
 from src.core.interfaces.base import AbstractProvider
 from src.core.config import settings
 from src.db.postgres import DatabaseSession
+from src.db.redis import get_cache_provider
+from src.db.storages import BaseCacheStorage
 from src.v1.payment_providers.models import PaymentProvider, PaymentProviderUpdate, \
     PaymentProviderRefundParams, PaymentProviderCreate
 from src.v1.payments.service import PaymentService, get_payment_service
@@ -93,9 +96,15 @@ class AbstractProviderMixin:
 
 class YooKassaPaymentProvider(AbstractProvider, AbstractProviderMixin):
 
-    def __init__(self, payment_service: PaymentService, plan_service: PlanService):
+    def __init__(
+        self,
+        payment_service: PaymentService,
+        plan_service: PlanService,
+        cache_provider: BaseCacheStorage,
+    ):
         self.payment_service = payment_service
         self.plan_service = plan_service
+        self.cache_provider = cache_provider
         Configuration.configure(
             secret_key=settings.yookassa_shop_secret_key, account_id=settings.yookassa_shop_id
         )
@@ -139,6 +148,7 @@ class YooKassaPaymentProvider(AbstractProvider, AbstractProviderMixin):
         self,
         type_object: Any,
         params: PaymentRequestBuilder | dict,
+        idempotency_key: str = None,
         dump_to_model: bool = True
     ) -> Payment:
         try:
@@ -146,7 +156,7 @@ class YooKassaPaymentProvider(AbstractProvider, AbstractProviderMixin):
                 f"Trying to create object of {type_object.__name__} with params: {params} "
                 f"in YooKassa provider"
             )
-            result = type_object.create(params)
+            result = type_object.create(params, idempotency_key=idempotency_key)
         except HTTPError as error:
             logger.error(
                 f"Creating object of {type_object.__name__} in YooKassa provider was failed. "
@@ -169,11 +179,19 @@ class YooKassaPaymentProvider(AbstractProvider, AbstractProviderMixin):
             user_id=params.user_id,
             payment_provider_id=params.payment_provider_id,
         )
-        # TODO:
-        #  Подумать над idempodentency key чтобы на генерировать новый платеж на каждый запрос у нас в БД.
-        #  По-хорошему здесь нужен кэш с TTL. Сделаю на последней итерации.
+        idempotency_key_id = f"{params.user_id}.{params.plan_id}"
+        idempotency_key_value = await self.cache_provider.get(idempotency_key_id)
+        if not idempotency_key_value:
+            idempotency_key_value = str(uuid.uuid4())
+            await self.cache_provider.set(
+                idempotency_key_id,
+                idempotency_key_value,
+                ttl_secs=settings.idempotency_key_ttl_secs,
+            )
         builder = await self.build_payment(payment, metadata, plan.is_recurring, params.return_url)
-        task = await asyncio.gather(self.create(Payment, builder))
+        task = await asyncio.gather(
+            self.create(Payment, builder, idempotency_key=idempotency_key_value)
+        )
         provider_payment, *_ = task
         pay_link = provider_payment.confirmation.confirmation_url
         payment.external_payment_id = provider_payment.id
@@ -220,12 +238,13 @@ async def get_abstract_payment_provider_service(
         session: DatabaseSession,
         params: SubscriptionPayLinkCreate = Depends(),
         payment_service: PaymentService = Depends(get_payment_service),
-        plan_service: PlanService = Depends(get_plan_service)
+        plan_service: PlanService = Depends(get_plan_service),
+        cache_provider: BaseCacheStorage = Depends(get_cache_provider)
 ) -> AbstractProvider:
     payment_provider_database_service = PostgresPaymentProviderService(session)
     provider = await payment_provider_database_service.get(params.payment_provider_id)
     provider = AbstractProviderMixin.get_provider(provider.name)
-    return provider(payment_service, plan_service)
+    return provider(payment_service, plan_service, cache_provider)
 
 
 async def get_payment_provider_service(session: DatabaseSession) -> PostgresPaymentProviderService:
