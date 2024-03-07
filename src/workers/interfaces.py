@@ -50,7 +50,7 @@ class BasePaymentMatchingWorker(BasePostgresService):
         payments = []
         try:
             logger.info("Uploading payments from a payment provider...")
-            result = self.provider.get_all(type_object=self.type_object, params=params)
+            result = await self.provider.get_all(type_object=self.type_object, params=params)
             async for res in result:
                 for item in res:
                     payments.append(item.id)
@@ -91,23 +91,3 @@ class BasePaymentMatchingWorker(BasePostgresService):
     async def session_commit(self) -> None:
         await self.session.commit()
         return
-
-    async def test_create(self): #ToDo: DELETE !!!
-        res = await self.provider.create(type_object=self.type_object, params={
-            "amount": {
-                "value": "1000.00",
-                "currency": "RUB"
-            },
-            "confirmation": {
-                "type": "redirect",
-                "return_url": "https://www.example.com/return_url"
-            },
-            "capture": True,
-            "description": "Оплата подписки",
-            "metadata": {
-                "payment_provider_id": "1",
-                "user_id": "2d781e15-000f-5000-a000-112200d1ec29",
-                "plan_id": "1"
-            }
-        })
-        print(*res)
