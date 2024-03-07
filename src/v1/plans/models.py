@@ -2,19 +2,13 @@ from enum import Enum
 from typing import Optional, List, TYPE_CHECKING
 
 from sqlmodel import SQLModel, Field, Relationship
-
-from src.models import BaseResponseBody, Base
-from src.models import TimeStampedMixin
+from src.models import BaseResponseBody, Base, TimeStampedMixin, CurrencyEnum
+from src.v1.plans.exceptions import PlanPriceNotFoundError
 from src.v1.subscriptions.models import Subscription
 
 if TYPE_CHECKING:
     from src.v1.features.models import Feature
     from src.v1.prices.models import Price
-
-
-class DurationUnitEnum(str, Enum):
-    MONTH = "month"
-    YEAR = "year"
 
 
 class PlansToFeaturesLink(Base, table=True):
@@ -69,6 +63,13 @@ class Plan(Base, TimeStampedMixin, table=True):
         link_model=PlansToFeaturesLink,
         sa_relationship_kwargs={"lazy": "selectin"},
     )
+
+    def calculate_price(self, currency: CurrencyEnum):
+        prices = list(filter(lambda x: x.currency == currency, self.prices))
+        if not prices:
+            raise PlanPriceNotFoundError
+        price, *_ = prices
+        return price.amount
 
     def __repr__(self) -> str:
         return f"Plan(id={self.id!r}, name={self.name!r}, is_active={self.is_active!r}"

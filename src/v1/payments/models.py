@@ -44,11 +44,16 @@ class Payment(Base, TimeStampedMixin, table=True):
         primary_key=True,
         schema_extra={"examples": [5]},
     )
-    subscription: "Subscription" = Relationship(back_populates="payments")
+    subscription: "Subscription" = Relationship(
+        back_populates="payments", sa_relationship_kwargs={"lazy": "selectin"}
+    )
+    subscription_id: int = Field(foreign_key="subscriptions.id", nullable=True)
     payment_provider_id: int = Field(foreign_key="payment_providers.id")
-    payment_provider: "PaymentProvider" = Relationship(back_populates="payments")
+    payment_provider: "PaymentProvider" = Relationship(
+        back_populates="payments", sa_relationship_kwargs={"lazy": "selectin"}
+    )
     payment_method: PaymentMethodsEnum = Field(
-        default=PaymentMethodsEnum.BANK_CARD, sa_column=Column(SQLModelEnum(PaymentMethodsEnum))
+        default=None, sa_column=Column(SQLModelEnum(PaymentMethodsEnum))
     )
     status: PaymentStatusEnum = Field(
         default=PaymentStatusEnum.CREATED, sa_column=Column(SQLModelEnum(PaymentStatusEnum))
@@ -58,41 +63,31 @@ class Payment(Base, TimeStampedMixin, table=True):
         sa_column=Column(SQLModelEnum(CurrencyEnum)),
     )
     amount: Decimal = Field(max_digits=8, decimal_places=2)
-    external_payment_id: Optional[str] = Field(default=None, max_length=50, unique=True)
-    external_payment_type_id: Optional[str] = Field(default=None, max_length=50)
+    external_payment_id: Optional[str] = Field(default=None, max_length=50)
 
     def __repr__(self) -> str:
         return f"Payment(id ={self.id!r}, status={self.status!r}, amount={self.amount!r}, currency={self.currency!r})"
 
 
-class PaymentObjectCreate(SQLModel):
+class PaymentCreate(SQLModel):
     payment_provider_id: int
-    payment_method: PaymentMethodsEnum
-    status: PaymentStatusEnum
+    status: PaymentStatusEnum = Field(default=PaymentStatusEnum.CREATED)
     currency: CurrencyEnum
     amount: Decimal = Field(max_digits=8, decimal_places=2)
-    external_payment_id: str
-    external_payment_type_id: str
-
-
-class PaymentCreate(PaymentObjectCreate):
-    plan_id: Optional[int] = Field(default=None)
-    status: Optional[PaymentStatusEnum] = Field(default=PaymentStatusEnum.CREATED)
-    external_payment_id: Optional[str] = Field(default=None)
-    external_payment_type_id: Optional[str] = Field(default=None)
-    user_id: Optional[UUID] = Field(default=None)
-    return_url: Optional[str] = Field(default=None)
+    external_payment_id: str = None
+    external_payment_type_id: str = None
 
 
 class PaymentUpdate(SQLModel):
-    status: Optional[PaymentStatusEnum] = Field(default=None)
-    external_payment_id: Optional[str] = Field(default=None)
-    external_payment_type_id: Optional[str] = Field(default=None)
+    status: PaymentStatusEnum | None = Field(default=None)
+    external_payment_id: str | None = Field(default=None)
+    payment_method: str | None = Field(default=None)
+    subscription_id: int | None = Field(default=None)
 
 
 class PaymentMetadata(SQLModel):
     payment_provider_id: int
-    user_id: str | UUID
+    user_id: int | UUID
     plan_id: int
 
 
