@@ -1,5 +1,6 @@
 import logging
 import asyncio
+import uuid
 
 from enum import Enum
 from typing import Any, Annotated, AsyncGenerator, Type
@@ -237,12 +238,13 @@ async def get_abstract_payment_provider_service(
         session: DatabaseSession,
         params: SubscriptionPayLinkCreate = Depends(),
         payment_service: PaymentService = Depends(get_payment_service),
-        plan_service: PlanService = Depends(get_plan_service)
+        plan_service: PlanService = Depends(get_plan_service),
+        cache_provider: BaseCacheStorage = Depends(get_cache_provider)
 ) -> AbstractProvider:
     payment_provider_database_service = PostgresPaymentProviderService(session)
     provider = await payment_provider_database_service.get(params.payment_provider_id)
     provider = AbstractProviderMixin.get_provider(provider.name)
-    return provider(payment_service, plan_service)
+    return provider(payment_service, plan_service, cache_provider)
 
 
 async def get_payment_provider_service(session: DatabaseSession) -> PostgresPaymentProviderService:
