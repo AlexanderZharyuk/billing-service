@@ -1,14 +1,11 @@
 import aiohttp
-
 from fastapi import Depends
 from fastapi.security import APIKeyCookie, APIKeyHeader
 
-from src.core.config import settings
-from src.core.exceptions import EntityNotFoundError
 from src.constants import ENV
+from src.core.config import settings
 from src.core.exceptions import ServiceError
 from src.models import User
-
 
 cookie_scheme = APIKeyCookie(name=settings.session_cookie_name, auto_error=False)
 header_scheme = APIKeyHeader(name=settings.external_service_token_name, auto_error=False)

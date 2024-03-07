@@ -12,3 +12,17 @@ class DatabaseStorage(ABC):
     @abstractmethod
     async def close(self) -> None:
         raise NotImplementedError
+
+
+class BaseCacheStorage(ABC):
+    @abstractmethod
+    async def get(self, *args, **kwargs):
+        raise NotImplementedError
+
+    @abstractmethod
+    async def set(self, *args, **kwargs):
+        raise NotImplementedError
+
+    @abstractmethod
+    async def close(self):
+        raise NotImplementedError
