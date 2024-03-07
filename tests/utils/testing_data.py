@@ -1,36 +1,34 @@
 from datetime import datetime
-
+from src.v1.payments.models import PaymentStatusEnum, PaymentMethodsEnum
+from src.v1.subscriptions.models import SubscriptionStatusEnum, CurrencyEnum
+from src.v1.refunds.models import RefundTicketStatusEnum
 
 test_data = {
     "features": [
         {
-            "id": 1,
             "name": "First Feature",
             "description": "First Test Feature!",
-            "available_entities": "[]",
+            "available_entities": ["Sport"],
             "created_at": datetime(2024, 1, 1),
             "updated_at": datetime(2024, 1, 1),
         },
         {
-            "id": 2,
             "name": "Second Feature",
             "description": "Second Test Feature!",
-            "available_entities": "[]",
+            "available_entities": ['Premier'],
             "created_at": datetime(2024, 1, 1),
             "updated_at": datetime(2024, 1, 1),
         },
         {
-            "id": 3,
             "name": "Third Feature",
             "description": "Third Test Feature!",
-            "available_entities": "[]",
+            "available_entities": ["18+"],
             "created_at": datetime(2024, 1, 1),
             "updated_at": datetime(2024, 1, 1),
         },
     ],
     "plans": [
         {
-            "id": 1,
             "name": "First Plan",
             "description": "",
             "is_active": True,
@@ -41,7 +39,6 @@ test_data = {
             "updated_at": datetime(2024, 1, 1),
         },
         {
-            "id": 2,
             "name": "Second Plan",
             "description": "",
             "is_active": False,
@@ -52,7 +49,6 @@ test_data = {
             "updated_at": datetime(2024, 1, 1),
         },
         {
-            "id": 3,
             "name": "Third Plan",
             "description": "",
             "is_active": True,
@@ -65,10 +61,10 @@ test_data = {
     ],
     "payments": [
         {
-            "id": 1,
             "payment_provider_id": 1,
-            "payment_method": 'bank_card',
-            "status": "created",
+            "payment_method": PaymentMethodsEnum.BANK_CARD,
+            "status": PaymentStatusEnum.CREATED,
+            "subscription_id": 1,
             "currency": "RUB",
             "amount": 100.00,
             "external_payment_id": None,
@@ -77,23 +73,23 @@ test_data = {
             "updated_at": datetime(2024, 1, 1),
         },
         {
-            "id": 2,
-            "payment_provider_id": 2,
-            "payment_method": {'bank_card'},
-            "status": "succeeded",
+            "payment_provider_id": 1,
+            "payment_method": PaymentMethodsEnum.BANK_CARD,
+            "status": PaymentStatusEnum.SUCCEEDED,
+            "subscription_id": 2,
             "currency": "RUB",
-            "amount": 300.00,
+            "amount": 200.00,
             "external_payment_id": None,
             "external_payment_type_id": None,
             "created_at": datetime(2024, 1, 1),
             "updated_at": datetime(2024, 1, 1),
         },
         {
-            "id": 3,
             "payment_provider_id": 1,
-            "payment_method": 'bank_card',
-            "status": "cancelled",
-            "currency": "RUB",
+            "payment_method": PaymentMethodsEnum.BANK_CARD,
+            "status": PaymentStatusEnum.CANCELED,
+            "subscription_id": 3,
+            "currency": CurrencyEnum.RUB,
             "amount": 300.00,
             "external_payment_id": None,
             "external_payment_type_id": None,
@@ -103,23 +99,20 @@ test_data = {
     ],
     "prices": [
         {
-            "id": 1,
             "plan_id": 1,
-            "currency": "RUB",
+            "currency": CurrencyEnum.RUB,
             "amount": 100.00,
             "created_at": datetime(2024, 1, 1),
             "updated_at": datetime(2024, 1, 1),
         },
         {
-            "id": 2,
             "plan_id": 2,
-            "currency": "RUB",
+            "currency": CurrencyEnum.RUB,
             "amount": 200.00,
             "created_at": datetime(2024, 1, 1),
             "updated_at": datetime(2024, 1, 1),
         },
         {
-            "id": 3,
             "plan_id": 3,
             "currency": "RUB",
             "amount": 300.00,
@@ -129,40 +122,45 @@ test_data = {
     ],
     "subscriptions": [
         {
-            "id": 1,
             "plan_id": 1,
-            "payment_provider_id": 1,
-            "currency": "RUB",
-            "payment_method": "bank_card",
+            "user_id": "cc6e0b24-a46f-4c8e-beb0-b28479f3b201",
+            "status": SubscriptionStatusEnum.ACTIVE,
+            "started_at": datetime(2024, 1, 1),
+            "ended_at": datetime(2024, 1, 31),
+            "created_at": datetime(2024, 1, 1),
+            "updated_at": datetime(2024, 1, 1),
+        },
+        {
+            "plan_id": 1,
+            "user_id": "cc6e0b24-a46f-4c8e-beb0-b28479f3b202",
+            "status": SubscriptionStatusEnum.CREATED,
+            "started_at": datetime(2024, 1, 1),
+            "ended_at": datetime(2024, 1, 31),
+            "created_at": datetime(2024, 1, 1),
+            "updated_at": datetime(2024, 1, 1),
+        },
+        {
+            "plan_id": 1,
             "user_id": "cc6e0b24-a46f-4c8e-beb0-b28479f3b203",
-            "return_url": None,
-            "created_at": datetime(2024, 1, 1),
-            "updated_at": datetime(2024, 1, 1),
-        },
-        {
-            "id": 2,
-            "plan_id": 1,
-            "payment_provider_id": 1,
-            "currency": "RUB",
-            "payment_method": "bank_card",
-            "user_id": "c849081f-9a99-4ff0-aa54-33118d2abaee",
-            "return_url": None,
-            "created_at": datetime(2024, 1, 1),
-            "updated_at": datetime(2024, 1, 1),
-        },
-        {
-            "id": 3,
-            "plan_id": 1,
-            "payment_provider_id": 1,
-            "currency": "RUB",
-            "payment_method": "bank_card",
-            "user_id": "c849081f-9a99-4ff0-aa54-33118d2abaee",
-            "return_url": None,
+            "status": SubscriptionStatusEnum.ACTIVE,
+            "started_at": datetime(2024, 1, 1),
+            "ended_at": datetime(2024, 1, 31),
             "created_at": datetime(2024, 1, 1),
             "updated_at": datetime(2024, 1, 1),
         },
     ],
     "payment_providers": [
-        {"id": 1, "name": "Yookassa", "description": None, "is_active": True}
+        {"name": "Yookassa", "description": None, "is_active": True}
+    ],
+    "refund_reasons": [
+        {"name": "Other"}
+    ],
+    "refunds": [
+        {"reason_id": 1,
+         "subscription_id": 1,
+         "user_id": "cc6e0b24-a46f-4c8e-beb0-b28479f3b203",
+         "additional_info": "No comment",
+         "status": RefundTicketStatusEnum.OPEN
+         }
     ],
 }

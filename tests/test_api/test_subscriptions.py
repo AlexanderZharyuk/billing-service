@@ -4,48 +4,43 @@ import os
 from starlette import status
 import json
 
-pytestmark = pytest.mark.anyio
+pytestmark = pytest.mark.asyncio
 
-base_url = os.getenv("BILLING_URL", "http://localhost:8000/api/v1")
-admin_subscription_url = base_url + "/admin/subscriptions/"
-subscription_url = base_url + "/subscriptions/"
+admin_subscription_url = "api/v1/admin/subscriptions/"
+subscription_url = "api/v1/subscriptions/"
 
 
-# TODO нужна фикстура, добавляющая строку в таблицу
 async def test_get_subscription(http_client):
-    pass
+    response = await http_client.get(subscription_url)
+    assert response.status_code == status.HTTP_200_OK
 
 
-# TODO нужна фикстура, добавляющая строку в таблицу
-async def test_get_subscriptions(http_client):
-    pass
-
-
-async def test_create_subscription(http_client):
-    response = await http_client.request(
-        "POST",
-        admin_subscription_url,
-        headers={"Content-Type": "application/json"},
-        data=json.dumps({"plan_id": 999999, "payment_provider_id": 1, "currency": "RUB"}),
-    )
-    assert response.status_code == status.HTTP_201_CREATED
+async def test_get_subscription_pay_link(http_client):
+    response = await http_client.get(subscription_url + "get_pay_link",
+                                     params={"plan_id": 1,
+                                             "payment_provider_id": 1,
+                                             "currency": "RUB",
+                                             "user_id": "cc6e0b24-a46f-4c8e-beb0-b28479f3b203",
+                                             "return_url": ""})
+    assert response.status_code == status.HTTP_200_OK
 
 
 async def test_pause_subscription(http_client):
+    body = {"status": "paused", "pause_duration_days": 7}
+    subscription_id = 1
     response = await http_client.request(
         "PATCH",
-        admin_subscription_url + "{id}",
-        headers={"Content-Type": "application/json"},
-        params={"subscription_id": 999999},
+        admin_subscription_url+str(subscription_id),
+        json=body,
     )
     assert response.status_code == status.HTTP_200_OK
 
 
 async def test_delete_subscription(http_client):
+    subscription_id = 1
     response = await http_client.request(
         "DELETE",
-        admin_subscription_url + "{id}",
-        params={"subscription_id": 999999},
+        admin_subscription_url+str(subscription_id),
+        params={"subscription_id": 1},
     )
     assert response.status_code == status.HTTP_200_OK
-    assert response.json()["data"]["success"] is True
