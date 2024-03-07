@@ -96,10 +96,10 @@ class AbstractProviderMixin:
 class YooKassaPaymentProvider(AbstractProvider, AbstractProviderMixin):
 
     def __init__(
-            self,
-            payment_service: PaymentService,
-            plan_service: PlanService,
-            cache_provider: BaseCacheStorage,
+        self,
+        payment_service: PaymentService,
+        plan_service: PlanService,
+        cache_provider: BaseCacheStorage,
     ):
         self.payment_service = payment_service
         self.plan_service = plan_service
