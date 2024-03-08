@@ -169,6 +169,8 @@ class YooKassaPaymentProvider(AbstractProvider, AbstractProviderMixin):
 
     async def generate_pay_link(self, params: SubscriptionPayLinkCreate):
         plan = await self.plan_service.get(params.plan_id)
+        if not plan.is_active:
+            raise EntityNotFoundError(message="Plan does not exists")
         payment_amount = plan.calculate_price(currency=params.currency)
 
         payment = PaymentCreate(
@@ -245,6 +247,8 @@ async def get_abstract_payment_provider_service(
 ) -> AbstractProvider:
     payment_provider_database_service = PostgresPaymentProviderService(session)
     provider = await payment_provider_database_service.get(params.payment_provider_id)
+    if not provider.is_active:
+        raise EntityNotFoundError(message="Payment provider does not active")
     provider = AbstractProviderMixin.get_provider(provider.name)
     return provider(payment_service, plan_service, cache_provider)
 
