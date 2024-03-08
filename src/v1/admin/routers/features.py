@@ -3,11 +3,27 @@ from typing import Annotated
 from fastapi import APIRouter, Path, status
 
 from src.models import BaseResponseBody
-from src.v1.features.models import SingleFeatureResponse, FeatureCreate, FeatureUpdate
+from src.v1.features.models import (
+    SingleFeatureResponse, FeatureCreate, FeatureUpdate, SeveralFeaturesResponse
+)
 from src.v1.features.service import PostgresFeatureService
 
 
 router = APIRouter(prefix='/features', tags=['Feature Admin'])
+
+
+@router.get(
+    "/",
+    summary="Получить список существующих фичей.",
+    response_model=SeveralFeaturesResponse,
+    status_code=status.HTTP_200_OK,
+    description="Получить список существующих фичей.",
+)
+async def list_features(
+    service: PostgresFeatureService = PostgresFeatureService
+) -> SeveralFeaturesResponse:
+    features = await service.get_all()
+    return SeveralFeaturesResponse(data=features)
 
 
 @router.post(

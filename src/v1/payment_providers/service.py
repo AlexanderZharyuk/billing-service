@@ -75,7 +75,7 @@ class PostgresPaymentProviderService(BasePostgresService):
 
     async def update(
         self,
-        entity_id: str,
+        entity_id: int,
         data: PaymentProviderUpdate,
         dump_to_model: bool = True,
         commit: bool = True
