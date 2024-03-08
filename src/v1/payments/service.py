@@ -47,17 +47,26 @@ class PaymentService(BasePostgresService):
         payments = await super().get_all(dump_to_model=dump_to_model)
         return payments
 
-    async def create(self, entity: PaymentCreate, dump_to_model: bool = True) -> dict | Payment:
-        payment = await super().create(entity, dump_to_model)
+    async def create(
+        self,
+        entity: PaymentCreate,
+        dump_to_model: bool = True,
+        commit: bool = True
+    ) -> dict | Payment:
+        payment = await super().create(entity, dump_to_model, commit)
         return payment
 
     async def update(
-        self, external_payment_id: str, data: PaymentUpdate, dump_to_model: bool = True
+        self,
+        external_payment_id: str,
+        data: PaymentUpdate,
+        dump_to_model: bool = True,
+        commit: bool = True
     ) -> dict | Payment:
         payment = await super().get_one_by_filter(
             filter_={"external_payment_id": external_payment_id}
         )
-        updated_payment = await super().update(payment.id, data, dump_to_model)
+        updated_payment = await super().update(payment.id, data, dump_to_model, commit)
         return updated_payment
 
     async def delete(self, entity_id: Any) -> None:
@@ -67,7 +76,7 @@ class PaymentService(BasePostgresService):
         self,
         entity: PaymentCreate,
         dump_to_model: bool = True
-    ) -> tuple[Payment, bool]:
+    ) -> tuple[dict | Payment, bool]:
         try:
             payment = await super().get_one_by_filter(
                 filter_=(

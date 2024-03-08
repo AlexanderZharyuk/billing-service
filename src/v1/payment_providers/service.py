@@ -67,18 +67,20 @@ class PostgresPaymentProviderService(BasePostgresService):
     async def create(
         self,
         entity: PaymentProviderCreate,
-        dump_to_model: bool = True
+        dump_to_model: bool = True,
+        commit: bool = True
     ) -> dict | PaymentProvider:
-        payment_provider = await super().create(entity, dump_to_model)
+        payment_provider = await super().create(entity, dump_to_model, commit)
         return payment_provider
 
     async def update(
         self,
         entity_id: str,
         data: PaymentProviderUpdate,
-        dump_to_model: bool = True
+        dump_to_model: bool = True,
+        commit: bool = True
     ) -> dict | PaymentProvider:
-        updated_payment_provider = await super().update(entity_id, data, dump_to_model)
+        updated_payment_provider = await super().update(entity_id, data, dump_to_model, commit)
         return updated_payment_provider
 
     async def delete(self, entity_id: Any) -> None:
