@@ -1,62 +1,73 @@
-from __future__ import annotations
-
 import logging
-from typing import Sequence
 
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlmodel import select
-from sqlmodel.ext.asyncio.session import AsyncSession
+from typing import Annotated
 
-from src.v1.features.exceptions import FeatureNotFoundError
-from src.v1.features.models import Feature
-from src.v1.features.models import FeatureCreate, FeatureUpdate
-from src.helpers import catch_sa_errors
-from src.v1.services import BaseService
+from fastapi import Depends
+
+from src.core.exceptions import EntityNotFoundError
+from src.v1.features.models import Feature, FeatureCreate, FeatureUpdate
+from src.core.interfaces.database import BasePostgresService
+from src.db.postgres import DatabaseSession
+
 
 logger = logging.getLogger(__name__)
 
 
-class FeatureDatabaseService(BaseService):
+class FeatureDatabaseService(BasePostgresService):
     """Feature service depends on PostgreSQL"""
 
-    @catch_sa_errors
-    async def get(self, session: AsyncSession, object_id: int) -> Feature:
-        statement = select(Feature).where(Feature.id == object_id)
-        result = await session.exec(statement)
-        feature = result.one()
-        if feature is None:
-            raise FeatureNotFoundError
+    def __init__(self, session: DatabaseSession):
+        self._model = Feature
+        self._session = session
+
+    async def get(self, entity_id: int, dump_to_model: bool = True) -> dict | Feature:
+        feature = await super().get(entity_id, dump_to_model)
         return feature
 
-    @catch_sa_errors
-    async def list(self, session: AsyncSession) -> Sequence[Feature]:
-        statement = select(Feature).order_by(Feature.id)
-        result = await session.exec(statement)
-        return result.all()
-
-    @catch_sa_errors
-    async def create(self, session: AsyncSession, data: FeatureCreate) -> Feature:
-        feature = Feature.model_validate(data)
-        session.add(feature)
-        await session.commit()
-        await session.refresh(feature)
+    async def get_one_by_filter(
+        self,
+        filter_: dict | tuple,
+        dump_to_model: bool = True
+    ) -> dict | Feature:
+        try:
+            feature = await super().get_one_by_filter(filter_, dump_to_model)
+        except EntityNotFoundError:
+            return None if dump_to_model else {}
         return feature
 
-    @catch_sa_errors
-    async def update(self, session: AsyncSession, object_id: int, data: FeatureUpdate) -> Feature:
-        feature = await self.get(session=session, object_id=object_id)
-        feature.sqlmodel_update(data.model_dump(exclude_unset=True))
-        session.add(feature)
-        await session.commit()
-        await session.refresh(feature)
-        return feature
+    async def get_all(
+        self,
+        filter_: dict | None = None,
+        dump_to_model: bool = True
+    ) -> list[dict] | list[Feature]:
+        plans = await super().get_all(filter_, dump_to_model)
+        return plans
 
-    @catch_sa_errors
-    async def delete(self, session: AsyncSession, object_id: int) -> Feature:
-        feature = await self.get(session=session, object_id=object_id)
-        await session.delete(feature)
-        await session.commit()
-        return feature
+    async def create(
+        self,
+        entity: FeatureCreate,
+        dump_to_model: bool = True,
+        commit: bool = True
+    ) -> dict | Feature:
+        plan = await super().create(entity, dump_to_model, commit)
+        return plan if dump_to_model else plan.model_dump()
+
+    async def update(
+        self,
+        entity_id: str,
+        data: FeatureUpdate,
+        dump_to_model: bool = True,
+        commit: bool = True
+    ) -> dict | Feature:
+        updated_plan = await super().update(entity_id, data, dump_to_model, commit)
+        return updated_plan
+
+    async def delete(self, entity_id: int | str) -> None:
+        await super().delete(entity_id)
 
 
-FeatureService = FeatureDatabaseService()
+def get_plan_service(session: DatabaseSession) -> FeatureDatabaseService:
+    return FeatureDatabaseService(session)
+
+
+PostgresFeatureService = Annotated[FeatureDatabaseService, Depends(get_plan_service)]

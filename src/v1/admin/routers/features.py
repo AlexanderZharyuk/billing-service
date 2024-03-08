@@ -1,10 +1,10 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Path, status
+from fastapi import APIRouter, Path, status
 
+from src.models import BaseResponseBody
 from src.v1.features.models import SingleFeatureResponse, FeatureCreate, FeatureUpdate
-from src.v1.features.service import FeatureService
-from src.db.postgres import DatabaseSession
+from src.v1.features.service import PostgresFeatureService
 
 
 router = APIRouter(prefix='/features', tags=['Feature Admin'])
@@ -18,10 +18,10 @@ router = APIRouter(prefix='/features', tags=['Feature Admin'])
     description="Создать новую фичу.",
 )
 async def create_feature(
-    feature: FeatureCreate,
-    db_session: DatabaseSession,
+    data: FeatureCreate,
+    service: PostgresFeatureService = PostgresFeatureService
 ) -> SingleFeatureResponse:
-    feature = await FeatureService.create(session=db_session, data=feature)
+    feature = await service.create(entity=data)
     return SingleFeatureResponse(data=feature)
 
 
@@ -33,24 +33,24 @@ async def create_feature(
     description="Редактировать фичу.",
 )
 async def update(
-    feature: FeatureUpdate,
+    data: FeatureUpdate,
     feature_id: Annotated[int, Path(examples=[5])],
-    db_session: DatabaseSession,
+    service: PostgresFeatureService = PostgresFeatureService
 ) -> SingleFeatureResponse:
-    feature = await FeatureService.update(session=db_session, object_id=feature_id, data=feature)
+    feature = await service.update(entity_id=feature_id, data=data)
     return SingleFeatureResponse(data=feature)
 
 
 @router.delete(
     "/{feature_id}",
     summary="Удалить фичу.",
-    response_model=SingleFeatureResponse,
+    response_model=BaseResponseBody,
     status_code=status.HTTP_200_OK,
     description="Удалить фичу.",
 )
 async def delete(
     feature_id: Annotated[int, Path(examples=[5])],
-    db_session: DatabaseSession,
-) -> SingleFeatureResponse:
-    result = await FeatureService.delete(session=db_session, object_id=feature_id)
-    return SingleFeatureResponse(data=result)
+    service: PostgresFeatureService = PostgresFeatureService
+) -> BaseResponseBody:
+    await service.delete(entity_id=feature_id)
+    return BaseResponseBody(data={"success": True})
