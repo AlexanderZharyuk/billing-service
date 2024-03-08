@@ -43,6 +43,17 @@ services:
       db:
         condition: service_healthy
 
+  redis:
+    restart: always
+    image: redis:7-alpine
+    volumes:
+      - redisstore:/data
+    healthcheck:
+      test: [ "CMD", "redis-cli", "--raw", "incr", "ping" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
 volumes:
   pgstore:
   redisstore:
