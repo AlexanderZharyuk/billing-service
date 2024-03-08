@@ -1,7 +1,7 @@
 import pytest
 
 
-pytestmark = pytest.mark.anyio
+pytestmark = pytest.mark.asycnio
 
 
 async def test_autopayments():

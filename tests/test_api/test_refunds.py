@@ -22,6 +22,6 @@ async def test_create_refund_reason(http_client: AsyncClient):
 
 
 async def test_make_refund(http_client: AsyncClient):
-    body = {"payment_id": 1, "amount": 1, "currency": "RUB"}
+    body = {"payment_id": "1", "amount": 1, "currency": "RUB"}
     response = await http_client.post(admin_refunds_url, json=body)
     assert response.status_code == status.HTTP_201_CREATED

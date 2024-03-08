@@ -16,6 +16,7 @@ from src.v1.subscriptions.models import Subscription
 from src.v1.payments.models import Payment
 from src.v1.payment_providers.models import PaymentProvider
 from src.v1.refunds.models import Refund, RefundReason
+from src.v1.prices.models import Price
 
 session = AsyncPostgresDatabaseProvider()
 
@@ -27,6 +28,7 @@ data_mapping = {
     "payments": Payment,
     "refund_reasons": RefundReason,
     "refunds": Refund,
+    "prices": Price
 }
 
 pg_connect_string = (
@@ -85,9 +87,6 @@ async def insert_data(db: AsyncSession):
             db.add(obj)
     await db.commit()
 
-    # result = await db.execute(text(f"SELECT * FROM plans"))
-    # print(result.fetchall())
-
 
 @pytest_asyncio.fixture
 async def http_client(db: AsyncSession, insert_data):
@@ -98,3 +97,5 @@ async def http_client(db: AsyncSession, insert_data):
     )
     yield client
     await client.aclose()
+
+

@@ -112,18 +112,11 @@ test_data = {
             "created_at": datetime(2024, 1, 1),
             "updated_at": datetime(2024, 1, 1),
         },
-        {
-            "plan_id": 3,
-            "currency": "RUB",
-            "amount": 300.00,
-            "created_at": datetime(2024, 1, 1),
-            "updated_at": datetime(2024, 1, 1),
-        },
     ],
     "subscriptions": [
         {
             "plan_id": 1,
-            "user_id": "cc6e0b24-a46f-4c8e-beb0-b28479f3b201",
+            "user_id": "3f8cd1fb-0cc0-4e99-ba39-9478fa007731",
             "status": SubscriptionStatusEnum.ACTIVE,
             "started_at": datetime(2024, 1, 1),
             "ended_at": datetime(2024, 1, 31),
@@ -158,7 +151,7 @@ test_data = {
     "refunds": [
         {"reason_id": 1,
          "subscription_id": 1,
-         "user_id": "cc6e0b24-a46f-4c8e-beb0-b28479f3b203",
+         "user_id": "3f8cd1fb-0cc0-4e99-ba39-9478fa007731",
          "additional_info": "No comment",
          "status": RefundTicketStatusEnum.OPEN
          }
