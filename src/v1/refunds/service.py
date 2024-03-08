@@ -15,7 +15,6 @@ from src.v1.refunds.models import (
     RefundReasonUpdate, RefundUpdate, RefundTicketStatusEnum
 )
 from src.v1.subscriptions.service import SubscriptionService, get_subscription_service
-from src.v1.subscriptions.models import SubscriptionStatusEnum
 
 
 class RefundReasonsService(BasePostgresService):
@@ -114,7 +113,7 @@ class RefundService(BasePostgresService):
     ) -> dict | RefundCreate:
         await self.refund_reasons_service.get(entity.reason_id)
         await self.subscription_service.get_one_by_filter(
-            {"id": entity.subscription_id, "status": SubscriptionStatusEnum.ACTIVE},
+            {"id": entity.subscription_id},
             raise_on_error=True
         )
         refund = await self.get_one_by_filter(
