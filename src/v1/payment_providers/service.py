@@ -67,18 +67,20 @@ class PostgresPaymentProviderService(BasePostgresService):
     async def create(
         self,
         entity: PaymentProviderCreate,
-        dump_to_model: bool = True
+        dump_to_model: bool = True,
+        commit: bool = True
     ) -> dict | PaymentProvider:
-        payment_provider = await super().create(entity, dump_to_model)
+        payment_provider = await super().create(entity, dump_to_model, commit)
         return payment_provider
 
     async def update(
         self,
-        entity_id: str,
+        entity_id: int,
         data: PaymentProviderUpdate,
-        dump_to_model: bool = True
+        dump_to_model: bool = True,
+        commit: bool = True
     ) -> dict | PaymentProvider:
-        updated_payment_provider = await super().update(entity_id, data, dump_to_model)
+        updated_payment_provider = await super().update(entity_id, data, dump_to_model, commit)
         return updated_payment_provider
 
     async def delete(self, entity_id: Any) -> None:
@@ -167,6 +169,8 @@ class YooKassaPaymentProvider(AbstractProvider, AbstractProviderMixin):
 
     async def generate_pay_link(self, params: SubscriptionPayLinkCreate):
         plan = await self.plan_service.get(params.plan_id)
+        if not plan.is_active:
+            raise EntityNotFoundError(message="Plan does not exists")
         payment_amount = plan.calculate_price(currency=params.currency)
 
         payment = PaymentCreate(
@@ -243,6 +247,8 @@ async def get_abstract_payment_provider_service(
 ) -> AbstractProvider:
     payment_provider_database_service = PostgresPaymentProviderService(session)
     provider = await payment_provider_database_service.get(params.payment_provider_id)
+    if not provider.is_active:
+        raise EntityNotFoundError(message="Payment provider does not active")
     provider = AbstractProviderMixin.get_provider(provider.name)
     return provider(payment_service, plan_service, cache_provider)
 

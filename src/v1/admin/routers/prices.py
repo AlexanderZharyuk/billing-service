@@ -1,11 +1,27 @@
 from fastapi import APIRouter, status
 
 from src.models import BaseResponseBody
-from src.v1.prices.models import SinglePriceResponse, PriceUpdate, PriceCreate
+from src.v1.prices.models import (
+    SinglePriceResponse, PriceUpdate, PriceCreate, SeveralPricesResponse
+)
 from src.v1.prices.service import PostgresPriceService
 
 
 router = APIRouter(prefix="/prices", tags=["Prices Admin"])
+
+
+@router.get(
+    "/",
+    summary="Получить прайсы",
+    response_model=SeveralPricesResponse,
+    status_code=status.HTTP_200_OK,
+    description="Получить прайсы",
+)
+async def get_prices(
+    service: PostgresPriceService = PostgresPriceService
+) -> SeveralPricesResponse:
+    prices = await service.get_all()
+    return SeveralPricesResponse(data=prices)
 
 
 @router.get(

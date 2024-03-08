@@ -15,7 +15,6 @@ from src.v1.refunds.models import (
     RefundReasonUpdate, RefundUpdate, RefundTicketStatusEnum
 )
 from src.v1.subscriptions.service import SubscriptionService, get_subscription_service
-from src.v1.subscriptions.models import SubscriptionStatusEnum
 
 
 class RefundReasonsService(BasePostgresService):
@@ -48,18 +47,22 @@ class RefundReasonsService(BasePostgresService):
         return refund_reasons
 
     async def create(
-        self, entity: RefundReasonCreate, dump_to_model: bool = True
+        self,
+        entity: RefundReasonCreate,
+        dump_to_model: bool = True,
+        commit: bool = True
     ) -> dict | RefundReasonCreate:
-        refund_reason = await super().create(entity)
-        return refund_reason if dump_to_model else refund_reason.model_dump()
+        refund_reason = await super().create(entity, dump_to_model, commit)
+        return refund_reason
 
     async def update(
         self,
         entity_id: str,
         data: RefundReasonUpdate,
-        dump_to_model: bool = True
+        dump_to_model: bool = True,
+        commit: bool = True
     ) -> dict | RefundReason:
-        updated_refund_reason = await super().update(entity_id, data, dump_to_model)
+        updated_refund_reason = await super().update(entity_id, data, dump_to_model, commit)
         return updated_refund_reason
 
     async def delete(self, entity_id: Any) -> None:
@@ -105,27 +108,29 @@ class RefundService(BasePostgresService):
     async def create(
         self,
         entity: RefundCreate,
-        dump_to_model: bool = True
+        dump_to_model: bool = True,
+        commit: bool = True
     ) -> dict | RefundCreate:
         await self.refund_reasons_service.get(entity.reason_id)
         await self.subscription_service.get_one_by_filter(
-            {"id": entity.subscription_id, "status": SubscriptionStatusEnum.ACTIVE},
+            {"id": entity.subscription_id},
             raise_on_error=True
         )
         refund = await self.get_one_by_filter(
             {"subscription_id": entity.subscription_id, "status": RefundTicketStatusEnum.OPEN}
         )
         if not refund:
-            refund = await super().create(entity)
-        return refund if dump_to_model else refund.model_dump()
+            refund = await super().create(entity, dump_to_model, commit)
+        return refund
 
     async def update(
         self,
         entity_id: str,
         data: RefundUpdate,
-        dump_to_model: bool = True
+        dump_to_model: bool = True,
+        commit: bool = True
     ) -> dict | Refund:
-        updated_refund = await super().update(entity_id, data, dump_to_model)
+        updated_refund = await super().update(entity_id, data, dump_to_model, commit)
         return updated_refund
 
     async def delete(self, entity_id: Any) -> None:

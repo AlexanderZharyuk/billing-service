@@ -38,17 +38,23 @@ class PlanService(BasePostgresService):
         plans = await super().get_all(filter_, dump_to_model)
         return plans
 
-    async def create(self, entity: Plan, dump_to_model: bool = True) -> dict | Plan:
-        plan = await super().create(entity)
-        return plan if dump_to_model else plan.model_dump()
+    async def create(
+        self,
+        entity: Plan,
+        dump_to_model: bool = True,
+        commit: bool = True
+    ) -> dict | Plan:
+        plan = await super().create(entity, dump_to_model, commit)
+        return plan
 
     async def update(
         self,
         entity_id: str,
         data: PlanUpdate,
-        dump_to_model: bool = True
+        dump_to_model: bool = True,
+        commit: bool = True
     ) -> dict | Plan:
-        updated_plan = await super().update(entity_id, data, dump_to_model)
+        updated_plan = await super().update(entity_id, data, dump_to_model, commit)
         return updated_plan
 
     async def delete(self, entity_id: Any) -> None:
