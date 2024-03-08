@@ -11,17 +11,23 @@ from src.models import Base
 from tests.utils.testing_data import test_data
 
 from src.v1.plans.models import Plan
+from src.v1.features.models import Feature
 from src.v1.subscriptions.models import Subscription
 from src.v1.payments.models import Payment
+from src.v1.payment_providers.models import PaymentProvider
+from src.v1.refunds.models import Refund, RefundReason
 
 session = AsyncPostgresDatabaseProvider()
 
 data_mapping = {
+    "features": Feature,
     "plans": Plan,
-    # "subscriptions": Subscription,
-    # "payments": Payment
+    "payment_providers": PaymentProvider,
+    "subscriptions": Subscription,
+    "payments": Payment,
+    "refund_reasons": RefundReason,
+    "refunds": Refund,
 }
-
 
 pg_connect_string = (
     f"postgresql+asyncpg://{settings.postgres_user}:"
@@ -75,9 +81,10 @@ async def db(db_engine):
 async def insert_data(db: AsyncSession):
     for table, model in data_mapping.items():
         for row in test_data[table]:
-            db.add(model(**row))
+            obj = model(**row)
+            db.add(obj)
     await db.commit()
-            # await db.refresh(table)
+
     # result = await db.execute(text(f"SELECT * FROM plans"))
     # print(result.fetchall())
 
