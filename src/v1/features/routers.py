@@ -1,18 +1,12 @@
-import uuid
-from uuid import UUID
-
-from fastapi import APIRouter, Path, status, Depends
+from fastapi import APIRouter, Path, status
 from typing_extensions import Annotated
 
-from src.db.postgres import DatabaseSession
-from src.dependencies import get_superuser
 from src.v1.features.models import (
-    FeatureCreate,
-    FeatureUpdate,
     SeveralFeaturesResponse,
     SingleFeatureResponse,
 )
-from src.v1.features.service import FeatureService
+from src.v1.features.service import PostgresFeatureService
+
 
 router = APIRouter(prefix="/features", tags=["Features"])
 
@@ -24,8 +18,10 @@ router = APIRouter(prefix="/features", tags=["Features"])
     status_code=status.HTTP_200_OK,
     description="Получить список существующих фичей.",
 )
-async def list_features(db_session: DatabaseSession) -> SeveralFeaturesResponse:
-    features = await FeatureService.list(session=db_session)
+async def list_features(
+    service: PostgresFeatureService = PostgresFeatureService
+) -> SeveralFeaturesResponse:
+    features = await service.get_all()
     return SeveralFeaturesResponse(data=features)
 
 
@@ -37,8 +33,9 @@ async def list_features(db_session: DatabaseSession) -> SeveralFeaturesResponse:
     description="Получить конкретную фичу.",
 )
 async def get_feature(
-    feature_id: Annotated[int, Path(examples=[5])], db_session: DatabaseSession
+    feature_id: Annotated[int, Path(examples=[5])],
+    service: PostgresFeatureService = PostgresFeatureService
 ) -> SingleFeatureResponse:
-    feature = await FeatureService.get(session=db_session, object_id=feature_id)
+    feature = await service.get(entity_id=feature_id)
     return SingleFeatureResponse(data=feature)
 

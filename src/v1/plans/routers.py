@@ -29,11 +29,9 @@ async def get_plan(
     description="Получить планы",
 )
 async def get_plans(
-    only_active: bool = True,
     service: PostgresPlanService = PostgresPlanService
 ) -> SeveralPlansResponse:
-    plan_filter = None if not only_active else {"is_active": True}
-    plans = await service.get_all(plan_filter)
+    plans = await service.get_all(filter_={"is_active": True})
     return SeveralPlansResponse(data=plans)
 
 

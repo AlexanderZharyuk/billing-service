@@ -59,3 +59,17 @@ async def get_tickets(
     refunds = await service.get_all(filter_)
     return BaseResponseBody(data=refunds)
 
+
+@router.delete(
+    "/{ticket_id}",
+    summary="Удалить запрос на возврат",
+    response_model=BaseResponseBody,
+    status_code=status.HTTP_200_OK,
+    description="Удалить запрос на возврат",
+)
+async def delete_ticket(
+    ticket_id: int,
+    service: PostgresRefundsService = PostgresRefundReasonsService,
+) -> BaseResponseBody:
+    await service.delete(ticket_id)
+    return BaseResponseBody(data={"success": True})

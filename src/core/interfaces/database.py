@@ -112,7 +112,11 @@ class BasePostgresService(AbstractService):
 
     @rollback_transaction(method="UPDATE")
     async def update(
-        self, entity_id: str, data: BaseModel, dump_to_model: bool = True, commit: bool = True
+        self,
+        entity_id: str | int,
+        data: BaseModel,
+        dump_to_model: bool = True,
+        commit: bool = True
     ) -> dict | BaseModel:
         entity = await self.get(entity_id)
         for attribute, value in data.model_dump(exclude_none=True).items():

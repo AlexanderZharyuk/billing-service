@@ -101,7 +101,9 @@ class SubscriptionService(BasePostgresService):
         dump_to_model: bool = True,
         commit: bool = True
     ) -> dict | Subscription:
-        updated_subscription = await super().update(entity_id=entity_id, data=data, dump_to_model=dump_to_model, commit=commit)
+        updated_subscription = await super().update(
+            entity_id=entity_id, data=data, dump_to_model=dump_to_model, commit=commit
+        )
         if commit:
             logger.debug(
                 "Изменена подписка в БД. ID подписки %s, ID пользователя %s, статус %s, дата окончания %s",

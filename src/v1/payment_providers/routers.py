@@ -36,7 +36,7 @@ async def get_payment_provider(
     description="Получить список платежей",
     name="payments",
 )
-async def get_payments(
+async def get_payment_providers(
     service: PostgresPaymentProviderService = PostgresPaymentProviderService
 ) -> SeveralPaymentProvidersResponse:
     payment_providers = await service.get_all()

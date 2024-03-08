@@ -15,7 +15,7 @@ class PriceService(BasePostgresService):
         self._model = Price
         self._session = session
 
-    async def get(self, entity_id: Any, dump_to_model: bool = True) -> dict | BaseModel:
+    async def get(self, entity_id: Any, dump_to_model: bool = True) -> dict | Price:
         price = await super().get(entity_id, dump_to_model)
         return price
 
@@ -23,7 +23,7 @@ class PriceService(BasePostgresService):
         self,
         filter_: dict | tuple,
         dump_to_model: bool = True
-    ) -> dict | BaseModel:
+    ) -> dict | Price:
         try:
             price = await super().get_one_by_filter(filter_, dump_to_model)
         except EntityNotFoundError:
@@ -35,18 +35,24 @@ class PriceService(BasePostgresService):
         filter_: dict | None = None,
         dump_to_model: bool = True
     ) -> list[dict] | list[Price]:
-        prices = await super().get_all(dump_to_model=dump_to_model)
+        prices = await super().get_all(filter_, dump_to_model=dump_to_model)
         return prices
 
-    async def create(self, entity: Price, dump_to_model: bool = True) -> dict | Price:
-        price = await super().create(entity)
-        return price if dump_to_model else price.model_dump()
+    async def create(
+        self,
+        entity: Price,
+        dump_to_model: bool = True,
+        commit: bool = True
+    ) -> dict | Price:
+        price = await super().create(entity, dump_to_model, commit)
+        return price
 
     async def update(
         self,
         entity_id: str,
         data: PriceUpdate,
-        dump_to_model: bool = True
+        dump_to_model: bool = True,
+        commit: bool = True
     ) -> dict | Price:
         updated_price = await super().update(entity_id, data, dump_to_model)
         return updated_price

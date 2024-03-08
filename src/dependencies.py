@@ -16,7 +16,7 @@ header_scheme = APIKeyHeader(name=settings.external_service_token_name, auto_err
 async def verify_and_get_user(token: str) -> User | None:
     user = None
 
-    # ToDo: dirty, should be refactored
+    # Для того, чтобы не поднимать сервис авторизации
     if ENV == "dev":
         user = {
             "id": "3f8cd1fb-0cc0-4e99-ba39-9478fa007731",
