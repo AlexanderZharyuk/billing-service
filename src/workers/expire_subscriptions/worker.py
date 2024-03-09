@@ -14,6 +14,7 @@ from src.v1.refunds.models import Refund, RefundReason
 from src.v1.subscriptions.models import Subscription, SubscriptionStatusEnum, SubscriptionUpdate
 from src.v1.subscriptions.service import get_subscription_service
 from src.workers.expire_subscriptions import logger
+from src.db.redis import get_cache_provider
 
 
 class ExpireSubscriptionsWorker:
@@ -25,12 +26,13 @@ class ExpireSubscriptionsWorker:
             session=session,
             plan_service=self.plan_service,
         )
+        self.cache_provider = get_cache_provider()
         self.subscriptions_service = get_subscription_service(
             session=session,
             payment_service=self.payment_provider_service,
             plan_service=self.plan_service,
         )
-        self.provider = get_provider(self.payment_service, self.plan_service)
+        self.provider = get_provider(self.payment_service, self.plan_service, self.cache_provider)
         self.date_now = datetime.combine(datetime.utcnow(), time.max)
         self.filter_date = self.date_now - timedelta(days=3)
 
