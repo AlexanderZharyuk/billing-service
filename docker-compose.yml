@@ -1,0 +1,59 @@
+version: '3.4'
+
+services:
+  db:
+    restart: always
+    image: postgres:14-alpine
+    volumes:
+      - pgstore:/var/lib/postgresql/data
+    env_file:
+      - .env
+    healthcheck:
+      test: ["CMD-SHELL", "sh -c 'pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}'"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  nginx:
+    restart: always
+    image: nginx:stable-alpine
+    ports:
+      - "80:80"
+    volumes:
+      - ./etc/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./etc/nginx/site.conf:/etc/nginx/conf.d/site.conf:ro
+      - ./etc/nginx/service_proxy.conf:/etc/nginx/conf.d/service_proxy.conf:ro
+    user: nginx:nginx
+    depends_on:
+      api:
+        condition: service_healthy
+
+  api:
+    restart: always
+    image: auth_api:${TAG:-latest}
+    env_file:
+      - .env
+    command: [ "start" ]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://api:8000/api/v1/healthcheck/"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    depends_on:
+      db:
+        condition: service_healthy
+
+  redis:
+    restart: always
+    image: redis:7-alpine
+    volumes:
+      - redisstore:/data
+    healthcheck:
+      test: [ "CMD", "redis-cli", "--raw", "incr", "ping" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  pgstore:
+  redisstore:
