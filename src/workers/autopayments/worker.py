@@ -21,6 +21,7 @@ from src.v1.refunds.models import Refund, RefundReason
 from src.v1.subscriptions.models import DurationUnitEnum, Subscription, SubscriptionStatusEnum, SubscriptionUpdate
 from src.v1.subscriptions.service import get_subscription_service
 from src.workers.autopayments import logger
+from src.db.redis import get_cache_provider
 
 
 class AutopaymentsWorker(BasePostgresService):
@@ -40,7 +41,8 @@ class AutopaymentsWorker(BasePostgresService):
             payment_service=self.payment_provider_service,
             plan_service=self.plan_service,
         )
-        self.provider = get_provider(self.payment_service, self.plan_service)
+        self.cache_provider = get_cache_provider()
+        self.provider = get_provider(self.payment_service, self.plan_service, self.cache_provider)
         self.type_object = yoPayment
         self.date_now = datetime.combine(datetime.utcnow(), time.max)
 

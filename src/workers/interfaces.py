@@ -20,7 +20,7 @@ from src.v1.prices.models import Price
 from src.v1.refunds.models import Refund, RefundReason
 from src.v1.subscriptions.models import Subscription, SubscriptionCreate, SubscriptionStatusEnum
 from src.v1.subscriptions.service import get_subscription_service
-
+from src.db.redis import get_cache_provider
 
 logger = logging.getLogger(__name__)
 
@@ -41,7 +41,8 @@ class BasePaymentMatchingWorker(BasePostgresService):
             payment_service=self.payment_provider_service,
             plan_service=self.plan_service,
         )
-        self.provider = get_provider(self.payment_service, self.plan_service)
+        self.cache_provider = get_cache_provider()
+        self.provider = get_provider(self.payment_service, self.plan_service, self.cache_provider)
         self.type_object = yoPayment
         self.date_format = "%Y-%m-%dT%H:%M:%SZ"
         self.date_now = datetime.utcnow()
