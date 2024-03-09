@@ -1,0 +1,24 @@
+@startuml
+' hide the spot
+' hide circle
+skinparam linetype ortho
+skinparam componentStyle rectangle
+!theme cerulean-outline
+
+person User
+person Admin
+component LoadBalancer
+component BillingService
+database Database
+component PaymentProvider
+database Cache
+component "Background Workers" as Workers
+User -down- LoadBalancer
+Admin -down- LoadBalancer
+LoadBalancer -down- BillingService
+BillingService -left- Database
+BillingService -down- PaymentProvider
+BillingService -right- Cache
+Workers .right- BillingService #LightGray
+Workers .up- Database #LightGray
+@enduml
