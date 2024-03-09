@@ -1,6 +1,6 @@
 import pytest
-from starlette import status
 from httpx import AsyncClient
+from starlette import status
 
 pytestmark = pytest.mark.asyncio
 
@@ -31,4 +31,3 @@ async def test_get_user_payments(http_client: AsyncClient):
 async def test_get_all_payments(http_client: AsyncClient):
     response = await http_client.get(admin_payments_url)
     assert response.status_code == status.HTTP_200_OK
-

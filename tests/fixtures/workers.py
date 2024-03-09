@@ -1,12 +1,15 @@
 import pytest
 import pytest_asyncio
+from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
+
 from src.workers.autopayments.worker import AutopaymentsWorker
 from src.workers.expire_subscriptions.worker import ExpireSubscriptionsWorker
 from src.workers.matching_expire_payments.worker import MatchingExpirePayments
-from src.workers.matching_pending_payments.worker import MatchingPendingPayments
-from src.workers.matching_successful_payments.worker import MatchingSuccessPayments
-from httpx import AsyncClient
+from src.workers.matching_pending_payments.worker import \
+    MatchingPendingPayments
+from src.workers.matching_successful_payments.worker import \
+    MatchingSuccessPayments
 
 
 @pytest_asyncio.fixture
@@ -37,6 +40,3 @@ async def matching_pending_payments(db: AsyncSession):
 async def matching_successful_payments(db: AsyncSession):
     worker = MatchingSuccessPayments(db)
     return worker
-
-
-

@@ -1,7 +1,8 @@
-import pytest
-from starlette import status
-from httpx import AsyncClient
 import json
+
+import pytest
+from httpx import AsyncClient
+from starlette import status
 
 pytestmark = pytest.mark.asyncio
 
@@ -24,20 +25,14 @@ async def test_get_prices(http_client: AsyncClient):
 
 async def test_create_price(http_client: AsyncClient):
     body = {"plan_id": 3, "currency": "RUB", "amount": 300}
-    response = await http_client.post(
-        admin_price_url,
-        json=body
-    )
+    response = await http_client.post(admin_price_url, json=body)
     assert response.status_code == status.HTTP_201_CREATED
 
 
 async def test_update_price(http_client: AsyncClient):
     price_id = 2
     body = {"currency": "RUB", "amount": 150}
-    response = await http_client.patch(
-        admin_price_url + str(price_id),
-        json=body
-    )
+    response = await http_client.patch(admin_price_url + str(price_id), json=body)
     assert response.status_code == status.HTTP_200_OK
 
 

@@ -1,9 +1,11 @@
-import pytest
-from src.workers.autopayments.worker import AutopaymentsWorker
-from sqlalchemy.ext.asyncio import AsyncSession
-from src.v1.plans import Plan
-from tests.utils.testing_data import test_data
 from datetime import datetime
+
+import pytest
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from src.v1.plans import Plan
+from src.workers.autopayments.worker import AutopaymentsWorker
+from tests.utils.testing_data import test_data
 
 pytestmark = pytest.mark.asyncio
 

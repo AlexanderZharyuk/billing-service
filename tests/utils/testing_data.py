@@ -1,7 +1,8 @@
 from datetime import datetime
-from src.v1.payments.models import PaymentStatusEnum, PaymentMethodsEnum
-from src.v1.subscriptions.models import SubscriptionStatusEnum, CurrencyEnum
+
+from src.v1.payments.models import PaymentMethodsEnum, PaymentStatusEnum
 from src.v1.refunds.models import RefundTicketStatusEnum
+from src.v1.subscriptions.models import CurrencyEnum, SubscriptionStatusEnum
 
 test_data = {
     "features": [
@@ -15,7 +16,7 @@ test_data = {
         {
             "name": "Second Feature",
             "description": "Second Test Feature!",
-            "available_entities": ['Premier'],
+            "available_entities": ["Premier"],
             "created_at": datetime(2024, 1, 1),
             "updated_at": datetime(2024, 1, 1),
         },
@@ -142,18 +143,15 @@ test_data = {
             "updated_at": datetime(2024, 1, 1),
         },
     ],
-    "payment_providers": [
-        {"name": "Yookassa", "description": None, "is_active": True}
-    ],
-    "refund_reasons": [
-        {"name": "Other"}
-    ],
+    "payment_providers": [{"name": "Yookassa", "description": None, "is_active": True}],
+    "refund_reasons": [{"name": "Other"}],
     "refunds": [
-        {"reason_id": 1,
-         "subscription_id": 1,
-         "user_id": "3f8cd1fb-0cc0-4e99-ba39-9478fa007731",
-         "additional_info": "No comment",
-         "status": RefundTicketStatusEnum.OPEN
-         }
+        {
+            "reason_id": 1,
+            "subscription_id": 1,
+            "user_id": "3f8cd1fb-0cc0-4e99-ba39-9478fa007731",
+            "additional_info": "No comment",
+            "status": RefundTicketStatusEnum.OPEN,
+        }
     ],
 }

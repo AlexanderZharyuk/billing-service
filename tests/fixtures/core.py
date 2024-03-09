@@ -1,22 +1,24 @@
 import asyncio
-from sqlalchemy.pool import NullPool
+
 import pytest_asyncio
 from httpx import AsyncClient
 from sqlalchemy import text
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.ext.asyncio import (AsyncSession, async_sessionmaker,
+                                    create_async_engine)
+from sqlalchemy.pool import NullPool
+
 from src.core.config import settings
-from src.db.postgres import db_provider, AsyncPostgresDatabaseProvider
+from src.db.postgres import AsyncPostgresDatabaseProvider, db_provider
 from src.main import app
 from src.models import Base
-from tests.utils.testing_data import test_data
-
-from src.v1.plans.models import Plan
 from src.v1.features.models import Feature
-from src.v1.subscriptions.models import Subscription
-from src.v1.payments.models import Payment
 from src.v1.payment_providers.models import PaymentProvider
-from src.v1.refunds.models import Refund, RefundReason
+from src.v1.payments.models import Payment
+from src.v1.plans.models import Plan
 from src.v1.prices.models import Price
+from src.v1.refunds.models import Refund, RefundReason
+from src.v1.subscriptions.models import Subscription
+from tests.utils.testing_data import test_data
 
 session = AsyncPostgresDatabaseProvider()
 
@@ -28,7 +30,7 @@ data_mapping = {
     "payments": Payment,
     "refund_reasons": RefundReason,
     "refunds": Refund,
-    "prices": Price
+    "prices": Price,
 }
 
 pg_connect_string = (
@@ -91,11 +93,6 @@ async def insert_data(db: AsyncSession):
 @pytest_asyncio.fixture
 async def http_client(db: AsyncSession, insert_data):
     app.dependency_overrides[db_provider] = lambda: db
-    client = AsyncClient(
-        app=app,
-        base_url="http://api_test"
-    )
+    client = AsyncClient(app=app, base_url="http://api_test")
     yield client
     await client.aclose()
-
-

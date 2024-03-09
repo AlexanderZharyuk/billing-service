@@ -1,9 +1,9 @@
 import asyncio
+
 import asyncpg
-from src.core.config import settings
 from data import test_data
-import asyncio
-import asyncpg
+
+from src.core.config import settings
 
 
 async def main():
