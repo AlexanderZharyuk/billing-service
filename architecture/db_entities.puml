@@ -2,77 +2,113 @@
 ' hide the spot
 ' hide circle
 skinparam linetype ortho
+!theme materia-outline
 
-entity "Subscriptions" as subscription {
+entity "subscriptions" as subscription #fff {
   *id: int <<PK>>
   --
   *plan_id: int <<FK>>
   *user_id: UUID
-  *status: text
+  *status: varchar
   *started_at: datetime
   *ended_at: datetime
   *created_at: datetime
   *updated_at: datetime
 }
 
-entity "Plans" as plan {
+entity "plans" as plan {
   *id : int <<PK>>
   --
-  *name: text
-  *description: text
+  *name: varchar
+  *description: varchar
   *is_active: bool
   *is_recurring: bool
-  *created_at: datetime
-  *updated_at: datetime
   *duration: int
   *duration_unit: int
-  *price_per_unit: decimal
-}
-
-
-entity "Payments" as payment {
-  *id: int <<PK>>
-  --
-  *invoice_id: int <<FK>>
-  *provider_id: int <<FK>>
-  *status: text
-  *amount: decimal
-  *currency: text
   *created_at: datetime
   *updated_at: datetime
 }
 
 
-entity "PaymentProviders" as provider {
+entity "payments" as payment{
+  *id: int <<PK>>
+  --
+  *subcription_id: int <<FK>>
+  *payment_provider_id: int <<FK>>
+  *payment_method: enum
+  *status: enum
+  *amount: decimal
+  *currency: enum
+  *external_payment_id: varchar
+  *created_at: datetime
+  *updated_at: datetime
+}
+
+entity "prices" as price {
+  *id: int <<PK>>
+  --
+  *plan_id: int <<FK>>
+  *amount: decimal
+  *currency: enum
+  *created_at: datetime
+  *updated_at: datetime
+}
+
+
+entity "payment_providers" as provider {
   *id : int <<PK>>
   --
-  *name: text
-  *description: text
+  *name: varchar
+  *description: varchar
   *is_active: bool
   *created_at: datetime
   *updated_at: datetime
 }
 
-
-entity "Features" as feature{
+entity "features" as feature{
   *id: int <<PK>>
   --
-  *name: text
-  *description: text
+  *name: varchar
+  *description: varchar
   *created_at: datetime
   *updated_at: datetime
   *available_entities: jsonb
 }
 
 
-entity "PlansToFeaturesLink" as plan_features {
+entity "plantofeatureslink" as plan_features {
   *plan_id: int <<FK>>
   *feature_id: int <<FK>>
 }
 
-payment }|-up-|| subscription
+
+entity "refunds" as refund {
+  *id: int <<PK>>
+  --
+  *reason_id: int <<FK>>
+  *subscription_id: int <<FK>>
+  *user_id: varchar
+  *additional_info: varchar
+  *status: enum
+  *created_at: datetime
+  *updated_at: datetime
+}
+
+
+entity "refund_reasons" as reasons {
+  *id: int <<PK>>
+  --
+  *name: varchar
+  *created_at: datetime
+  *updated_at: datetime
+}
+
+payment }|-right-|| subscription
+price }|-left-|| plan
 subscription }|-up-|| plan
 payment }|-left-|| provider
 plan ||-left-|{ plan_features
 plan_features }|-left-|| feature
+refund }|-left-|| subscription
+refund }|-r-|| reasons
 @enduml
