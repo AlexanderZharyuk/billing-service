@@ -63,7 +63,7 @@ test_data = {
         {
             "payment_provider_id": 1,
             "payment_method": PaymentMethodsEnum.BANK_CARD,
-            "status": PaymentStatusEnum.CREATED,
+            "status": PaymentStatusEnum.PENDING,
             "subscription_id": 1,
             "currency": "RUB",
             "amount": 100.00,
@@ -87,7 +87,7 @@ test_data = {
         {
             "payment_provider_id": 1,
             "payment_method": PaymentMethodsEnum.BANK_CARD,
-            "status": PaymentStatusEnum.CANCELED,
+            "status": PaymentStatusEnum.SUCCEEDED,
             "subscription_id": 3,
             "currency": CurrencyEnum.RUB,
             "amount": 300.00,

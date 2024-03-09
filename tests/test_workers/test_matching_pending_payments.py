@@ -1,15 +1,14 @@
 import pytest
+from src.workers.matching_pending_payments.worker import MatchingPendingPayments
+from httpx import AsyncClient
 
-pytestmark = pytest.mark.anyio
-
-
-async def test_matching_data():
-    pass
+pytestmark = pytest.mark.asyncio
 
 
-async def test_fix_paid_payments():
-    pass
-
-
-async def test_fix_expired_payments():
-    pass
+async def test_matching_data(http_client: AsyncClient, matching_pending_payments_worker: MatchingPendingPayments):
+    url = "/api/v1/payments/1"
+    response = await http_client.get(url)
+    assert response.json()["data"]["status"] == "pending"
+    await matching_pending_payments_worker.matching_data()
+    response = await http_client.get(url)
+    assert response.json()["data"]["status"] == "succeeded"

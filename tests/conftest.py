@@ -3,7 +3,8 @@ import asyncpg
 import pytest
 
 pytest_plugins = (
-    "tests.fixtures.core"
+    "tests.fixtures.core",
+    "tests.fixtures.workers"
 )
 
 
