@@ -38,5 +38,5 @@ down:
 run:
 	@uvicorn src.main:app --reload --port ${LISTEN_PORT}
 
-test:
-    @pytest tests
+tesr:
+	@pytest tests

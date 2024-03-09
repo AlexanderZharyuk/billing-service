@@ -1,4 +1,3 @@
-from typing import Optional, List
 from uuid import UUID, uuid4
 
 from sqlalchemy.dialects.postgresql import JSONB
@@ -17,7 +16,7 @@ class Feature(Base, TimeStampedMixin, table=True):
     class Config:
         arbitrary_types_allowed = True
 
-    id: Optional[int] = Field(
+    id: int | None = Field(
         default=None,
         primary_key=True,
         schema_extra={"examples": [5]},
@@ -27,17 +26,17 @@ class Feature(Base, TimeStampedMixin, table=True):
         schema_extra={"examples": ["feature_X"]},
         nullable=False,
     )
-    description: Optional[str] = Field(
+    description: str | None = Field(
         default=None,
         schema_extra={"examples": ["feature_X_description"]},
         nullable=True,
     )
-    available_entities: Optional[List[UUID]] = Field(
+    available_entities: list[UUID] | None = Field(
         default_factory=list,
         sa_column=Column(JSONB),
         schema_extra={"examples": [[uuid4(), uuid4()]]},
     )
-    plans: List["Plan"] = Relationship(back_populates="features", link_model=PlansToFeaturesLink)
+    plans: list["Plan"] = Relationship(back_populates="features", link_model=PlansToFeaturesLink)
 
     def __repr__(self) -> str:
         return f"Feature(id={self.id!r}, name={self.name!r})"
@@ -45,14 +44,14 @@ class Feature(Base, TimeStampedMixin, table=True):
 
 class FeatureCreate(SQLModel):
     name: str
-    description: Optional[str] = Field(default=None)
-    available_entities: Optional[list] = Field(default=[])
+    description: str | None = Field(default=None)
+    available_entities: list | None = Field(default=[])
 
 
 class FeatureUpdate(SQLModel):
-    name: Optional[str] = Field(default=None)
-    description: Optional[str] = Field(default=None)
-    available_entities: Optional[list] = Field(default=None)
+    name: str | None = Field(default=None)
+    description: str | None = Field(default=None)
+    available_entities: list | None = Field(default=None)
 
 
 class SingleFeatureResponse(BaseResponseBody):

@@ -1,5 +1,5 @@
 from decimal import Decimal
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 from sqlmodel import Field, Relationship
 
@@ -13,12 +13,12 @@ if TYPE_CHECKING:
 class Price(Base, table=True):
     __tablename__ = "prices"
 
-    id: Optional[int] = Field(
+    id: int | None = Field(
         default=None,
         primary_key=True,
         schema_extra={"examples": [5]},
     )
-    plan_id: Optional[int] = Field(default=None, foreign_key="plans.id")
+    plan_id: int | None = Field(default=None, foreign_key="plans.id")
     plan: "Plan" = Relationship(back_populates="prices")
     currency: CurrencyEnum = Field(default=CurrencyEnum.RUB)
     amount: Decimal = Field(
@@ -39,9 +39,9 @@ class PriceCreate(Base):
 
 
 class PriceUpdate(Base):
-    plan_id: Optional[int] = Field(default=None)
-    currency: Optional[CurrencyEnum] = Field(default=None)
-    amount: Optional[Decimal] = Field(default=None)
+    plan_id: int | None = Field(default=None)
+    currency: CurrencyEnum | None = Field(default=None)
+    amount: Decimal | None = Field(default=None)
 
 
 class SinglePriceResponse(BaseResponseBody):

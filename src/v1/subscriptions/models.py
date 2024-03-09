@@ -3,11 +3,13 @@ import uuid
 from dateutil.relativedelta import relativedelta
 from datetime import datetime, timedelta
 from enum import Enum
-from typing import Optional, List, TYPE_CHECKING
+from typing import TYPE_CHECKING
 from uuid import UUID
 
 from sqlalchemy import DateTime
-from sqlmodel import SQLModel, Field, Relationship, Column, Enum as SQLModelEnum
+from sqlmodel import (
+    SQLModel, Field, Relationship, Column, Enum as SQLModelEnum, ForeignKey, Integer
+)
 from src.models import CurrencyEnum, BaseResponseBody, Base, TimeStampedMixin
 
 if TYPE_CHECKING:
@@ -43,7 +45,7 @@ class Subscription(Base, TimeStampedMixin, table=True):
     class Config:
         arbitrary_types_allowed = True
 
-    id: Optional[int] = Field(
+    id: int | None = Field(
         default=None,
         primary_key=True,
         schema_extra={"examples": [5]},
@@ -67,14 +69,14 @@ class Subscription(Base, TimeStampedMixin, table=True):
         nullable=False,
         schema_extra={"examples": ["2023-01-01T00:00:00"]},
     )
-    plan_id: int = Field(foreign_key="plans.id")
+    plan_id: int = Field(sa_column=Column(Integer, ForeignKey("plans.id", ondelete="")))
     plan: "Plan" = Relationship(
         back_populates="subscriptions", sa_relationship_kwargs={"lazy": "selectin"}
     )
-    payments: List["Payment"] = Relationship(
+    payments: list["Payment"] = Relationship(
         back_populates="subscription", sa_relationship_kwargs={"lazy": "selectin"}
     )
-    refunds: List["Refund"] = Relationship(
+    refunds: list["Refund"] = Relationship(
         back_populates="subscription", sa_relationship_kwargs={"lazy": "selectin"}
     )
 

@@ -1,10 +1,13 @@
 from decimal import Decimal
-from typing import Optional, List
+from typing import TYPE_CHECKING
 
 from sqlmodel import SQLModel, Field, Relationship
 
 from src.models import BaseResponseBody, Base, CurrencyEnum
 from src.models import TimeStampedMixin
+
+if TYPE_CHECKING:
+    from src.v1.payments.models import Payment
 
 
 class PaymentProvider(Base, TimeStampedMixin, table=True):
@@ -12,7 +15,7 @@ class PaymentProvider(Base, TimeStampedMixin, table=True):
 
     __tablename__ = "payment_providers"
 
-    id: Optional[int] = Field(
+    id: int | None = Field(
         default=None,
         primary_key=True,
         schema_extra={"examples": [5]},
@@ -22,7 +25,7 @@ class PaymentProvider(Base, TimeStampedMixin, table=True):
         schema_extra={"examples": ["payment_provider_X"]},
         nullable=False,
     )
-    description: Optional[str] = Field(
+    description: str | None = Field(
         default=None,
         schema_extra={"examples": ["payment_provider_X_description"]},
         nullable=True,
@@ -32,7 +35,7 @@ class PaymentProvider(Base, TimeStampedMixin, table=True):
         schema_extra={"examples": [True]},
         nullable=False,
     )
-    payments: List["Payment"] = Relationship(back_populates="payment_provider")
+    payments: "Payment" = Relationship(back_populates="payment_provider")
 
     def __repr__(self) -> str:
         return f"PaymentProvider(id={self.id!r}, name={self.name!r}, is_active={self.is_active!r})"
@@ -40,14 +43,14 @@ class PaymentProvider(Base, TimeStampedMixin, table=True):
 
 class PaymentProviderCreate(SQLModel):
     name: str
-    description: Optional[str] = Field(default=None)
+    description: str | None = Field(default=None)
     is_active: bool = Field(default=True)
 
 
 class PaymentProviderUpdate(SQLModel):
-    name: Optional[str] = Field(default=None)
-    description: Optional[str] = Field(default=None)
-    is_active: Optional[bool] = Field(default=None)
+    name: str | None = Field(default=None)
+    description: str | None = Field(default=None)
+    is_active: bool | None = Field(default=None)
 
 
 class SinglePaymentProviderResponse(BaseResponseBody):

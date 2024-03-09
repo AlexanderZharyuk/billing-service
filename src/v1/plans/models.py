@@ -1,5 +1,4 @@
-from enum import Enum
-from typing import Optional, List, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 from sqlmodel import SQLModel, Field, Relationship
 from src.models import BaseResponseBody, Base, TimeStampedMixin, CurrencyEnum
@@ -12,8 +11,8 @@ if TYPE_CHECKING:
 
 
 class PlansToFeaturesLink(Base, table=True):
-    plan_id: Optional[int] = Field(default=None, foreign_key="plans.id", primary_key=True)
-    feature_id: Optional[int] = Field(default=None, foreign_key="features.id", primary_key=True)
+    plan_id: int | None = Field(default=None, foreign_key="plans.id", primary_key=True)
+    feature_id: int | None = Field(default=None, foreign_key="features.id", primary_key=True)
 
 
 class Plan(Base, TimeStampedMixin, table=True):
@@ -21,7 +20,7 @@ class Plan(Base, TimeStampedMixin, table=True):
 
     __tablename__ = "plans"
 
-    id: Optional[int] = Field(
+    id: int | None = Field(
         default=None,
         primary_key=True,
         schema_extra={"examples": [5]},
@@ -30,7 +29,7 @@ class Plan(Base, TimeStampedMixin, table=True):
         index=True,
         schema_extra={"examples": ["plan_X"]},
     )
-    description: Optional[str] = Field(
+    description: str | None = Field(
         default=None,
         schema_extra={"examples": ["plan_X_description"]},
     )
@@ -52,13 +51,14 @@ class Plan(Base, TimeStampedMixin, table=True):
         nullable=False,
         schema_extra={"examples": ["month", "year"]},
     )
-    prices: List["Price"] = Relationship(
+    prices: list["Price"] = Relationship(
+        back_populates="plan",
+        sa_relationship_kwargs={"lazy": "selectin", "cascade": "all, delete"}
+    )
+    subscriptions: list["Subscription"] = Relationship(
         back_populates="plan", sa_relationship_kwargs={"lazy": "selectin"}
     )
-    subscriptions: List["Subscription"] = Relationship(
-        back_populates="plan", sa_relationship_kwargs={"lazy": "selectin"}
-    )
-    features: List["Feature"] = Relationship(
+    features: list["Feature"] = Relationship(
         back_populates="plans",
         link_model=PlansToFeaturesLink,
         sa_relationship_kwargs={"lazy": "selectin"},
@@ -77,20 +77,20 @@ class Plan(Base, TimeStampedMixin, table=True):
 
 class PlanCreate(SQLModel):
     name: str
-    description: Optional[str] = Field(default=None)
+    description: str | None = Field(default=None)
     is_active: bool = Field(default=True)
     is_recurring: bool = Field(default=True)
-    duration: Optional[int] = Field(default=None)
-    duration_unit: Optional[str] = Field(default=None)
+    duration: int | None = Field(default=None)
+    duration_unit: str | None = Field(default=None)
 
 
 class PlanUpdate(SQLModel):
-    name: Optional[str] = Field(default=None)
-    description: Optional[str] = Field(default=None)
+    name: str | None = Field(default=None)
+    description: str | None = Field(default=None)
     is_active: bool = Field(default=None)
     is_recurring: bool = Field(default=None)
-    duration: Optional[int] = Field(default=None)
-    duration_unit: Optional[str] = Field(default=None)
+    duration: int | None = Field(default=None)
+    duration_unit: str | None = Field(default=None)
 
 
 class SinglePlanResponse(BaseResponseBody):

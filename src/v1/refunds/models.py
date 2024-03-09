@@ -1,9 +1,8 @@
-from datetime import datetime
 from enum import Enum
-from typing import Optional, List
 
-from sqlmodel import SQLModel, Field, Relationship, Column, Enum as SQLModelEnum
-
+from sqlmodel import (
+    SQLModel, Field, Relationship, Column, Enum as SQLModelEnum, Integer, ForeignKey
+)
 
 from src.models import Base
 from src.models import TimeStampedMixin
@@ -21,7 +20,7 @@ class RefundReason(Base, TimeStampedMixin, table=True):
 
     __tablename__ = "refund_reasons"
 
-    id: Optional[int] = Field(
+    id: int | None = Field(
         default=None,
         primary_key=True,
         schema_extra={"examples": [5]},
@@ -30,7 +29,7 @@ class RefundReason(Base, TimeStampedMixin, table=True):
         default=None,
         schema_extra={"examples": ["description of the reason"]},
     )
-    refunds: List["Refund"] = Relationship(
+    refunds: list["Refund"] = Relationship(
         back_populates="reason", sa_relationship_kwargs={"lazy": "selectin"}
     )
 
@@ -43,20 +42,23 @@ class Refund(Base, TimeStampedMixin, table=True):
 
     __tablename__ = "refunds"
 
-    id: Optional[int] = Field(
+    id: int | None = Field(
         default=None,
         primary_key=True,
         schema_extra={"examples": [5]},
     )
     reason_id: int = Field(foreign_key="refund_reasons.id")
     reason: "RefundReason" = Relationship(back_populates="refunds")
-    subscription_id: int = Field(foreign_key="subscriptions.id")
+    subscription_id: int = Field(
+        sa_column=Column(
+            Integer, ForeignKey("subscriptions.id", ondelete="RESTRICT"), nullable=True)
+    )
     subscription: "Subscription" = Relationship(back_populates="refunds")
     user_id: str = Field(
         nullable=False,
         schema_extra={"examples": [10]},
     )
-    additional_info: Optional[str] = Field(
+    additional_info: str | None = Field(
         default=None,
         schema_extra={"examples": ["information from the user"]},
         nullable=True
